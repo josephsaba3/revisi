@@ -1,0 +1,82 @@
+from pydantic import BaseModel, Field, HttpUrl, field_validator
+
+
+CORE_SCORE_KEYS = (
+    "brand_fit",
+    "audience_fit",
+    "clarity",
+    "human_sound",
+    "specificity",
+    "trust",
+    "distinctiveness",
+)
+
+
+class ScanRequest(BaseModel):
+    url: HttpUrl
+    brand_voice: str | None = None
+
+
+class ExtractedLine(BaseModel):
+    source: str
+    text: str
+
+
+class ExtractedPage(BaseModel):
+    url: str
+    title: str | None = None
+    meta_description: str | None = None
+    headings: list[str] = Field(default_factory=list)
+    ctas: list[str] = Field(default_factory=list)
+    lines: list[ExtractedLine] = Field(default_factory=list)
+
+    @property
+    def combined_text(self) -> str:
+        return "\n".join(line.text for line in self.lines)
+
+
+class Scorecard(BaseModel):
+    brand_fit: int = Field(ge=0, le=100)
+    audience_fit: int = Field(ge=0, le=100)
+    clarity: int = Field(ge=0, le=100)
+    human_sound: int = Field(ge=0, le=100)
+    specificity: int = Field(ge=0, le=100)
+    trust: int = Field(ge=0, le=100)
+    distinctiveness: int = Field(ge=0, le=100)
+
+
+class AuditIssue(BaseModel):
+    issue_type: str
+    priority: str
+    source: str
+    original_copy: str
+    explanation: str
+    suggested_rewrite: str
+
+
+class RewriteSuggestion(BaseModel):
+    source: str
+    original: str
+    rewrite: str
+    reason: str
+
+
+class AuditResult(BaseModel):
+    overall_score: int = Field(ge=0, le=100)
+    verdict: str
+    scoring_context: str
+    contextual_modifiers: list[str] = Field(default_factory=list, max_length=4)
+    scores: Scorecard
+    ai_sludge_risk: int = Field(ge=0, le=100)
+    top_issues: list[AuditIssue] = Field(default_factory=list, max_length=8)
+    line_level_rewrites: list[RewriteSuggestion] = Field(default_factory=list, max_length=8)
+    voice_summary: list[str] = Field(default_factory=list, max_length=6)
+    recommended_next_action: str
+
+    @field_validator("verdict", "scoring_context", "recommended_next_action")
+    @classmethod
+    def not_empty(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("must not be empty")
+        return value

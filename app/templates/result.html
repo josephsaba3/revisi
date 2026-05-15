@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Page Scan Result - Brand Voice Auditor{% endblock %}
+
+{% block content %}
+<section class="result-header">
+  <div>
+    <p class="eyebrow">Page scan result</p>
+    <h1>{{ page.verdict }}</h1>
+    <a class="url" href="{{ page.url }}" target="_blank" rel="noreferrer">{{ page.url }}</a>
+  </div>
+  <div class="score-box">
+    <span class="score">{{ page.overall_score }}</span>
+    <span class="score-label">Overall</span>
+  </div>
+</section>
+
+<section class="summary-grid">
+  <div class="panel">
+    <h2>Scan Details</h2>
+    <dl>
+      <dt>Brand voice source</dt>
+      <dd>{{ scan.brand_voice_source }}</dd>
+      <dt>Scoring context</dt>
+      <dd>{{ page.scoring_context }}</dd>
+      <dt>AI sludge risk</dt>
+      <dd>{{ page.ai_sludge_risk }} / 100</dd>
+    </dl>
+  </div>
+  <div class="panel">
+    <h2>Recommended Next Action</h2>
+    <p>{{ page.recommended_next_action }}</p>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Scorecard</h2>
+  <div class="scorecard">
+    {% for label, key in [
+      ("Brand Fit", "brand_fit"),
+      ("Audience Fit", "audience_fit"),
+      ("Clarity", "clarity"),
+      ("Human Sound", "human_sound"),
+      ("Specificity", "specificity"),
+      ("Trust", "trust"),
+      ("Distinctiveness", "distinctiveness")
+    ] %}
+      <div class="metric">
+        <span>{{ label }}</span>
+        <strong>{{ page.scores[key] }}</strong>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Extracted Page Copy</h2>
+  <div class="extract-grid">
+    <div>
+      <h3>Title</h3>
+      <p>{{ page.title or "No title found" }}</p>
+    </div>
+    <div>
+      <h3>Meta Description</h3>
+      <p>{{ page.meta_description or "No meta description found" }}</p>
+    </div>
+    <div>
+      <h3>H1 / H2s</h3>
+      {% if page.headings %}
+        <ul>{% for heading in page.headings %}<li>{{ heading }}</li>{% endfor %}</ul>
+      {% else %}
+        <p>No H1/H2 headings found.</p>
+      {% endif %}
+    </div>
+    <div>
+      <h3>CTAs</h3>
+      {% if page.ctas %}
+        <ul>{% for cta in page.ctas %}<li>{{ cta }}</li>{% endfor %}</ul>
+      {% else %}
+        <p>No clear CTAs detected.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Page Issues</h2>
+  {% if issues %}
+    <div class="issue-list">
+      {% for issue in issues %}
+        <article class="issue">
+          <div>
+            <span class="priority">{{ issue.priority }}</span>
+            <h3>{{ issue.issue_type }}</h3>
+          </div>
+          <p class="quote">{{ issue.original_copy }}</p>
+          <p>{{ issue.explanation }}</p>
+          <p><strong>Suggested rewrite:</strong> {{ issue.suggested_rewrite }}</p>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No high-priority issues found.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Line-Level Rewrites</h2>
+  {% if rewrites %}
+    <div class="rewrite-list">
+      {% for rewrite in rewrites %}
+        <article class="rewrite">
+          <p class="source">{{ rewrite.source }}</p>
+          <p class="quote">{{ rewrite.original }}</p>
+          <div class="rewrite-output">
+            <p>{{ rewrite.rewrite }}</p>
+            <button type="button" data-copy="{{ rewrite.rewrite }}">Copy</button>
+          </div>
+          <p>{{ rewrite.reason }}</p>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No line-level rewrites returned.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Generated Mini Voice Guide</h2>
+  <ul>
+    {% for item in page.voice_summary %}
+      <li>{{ item }}</li>
+    {% endfor %}
+  </ul>
+</section>
+
+<a class="back-link" href="/">Scan another page</a>
+{% endblock %}

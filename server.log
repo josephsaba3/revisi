@@ -1,0 +1,6 @@
+INFO:     127.0.0.1:53969 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61708 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61709 - "GET /static/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61708 - "GET /static/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61708 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61714 - "POST /scan HTTP/1.1" 200 OK
