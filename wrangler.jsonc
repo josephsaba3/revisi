@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "brand-voice-auditor",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-15",
+  "observability": {
+    "enabled": true
+  },
+  "containers": [
+    {
+      "class_name": "BrandVoiceAuditorContainer",
+      "image": "./Dockerfile",
+      "max_instances": 3
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "BRAND_VOICE_AUDITOR",
+        "class_name": "BrandVoiceAuditorContainer"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["BrandVoiceAuditorContainer"]
+    }
+  ]
+}

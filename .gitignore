@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.env
+.dev.vars
+brand_voice_auditor.db
+server.log
+server.err.log
+node_modules/
+.wrangler/
+dist/
