@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse
@@ -11,6 +12,9 @@ from .database import get_db, init_db
 from .schemas import AuditResult
 from .services.analyzer import analyze_page
 from .services.extractor import FetchError, extract_visible_copy, fetch_html, normalize_url
+
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -51,6 +55,18 @@ async def scan(
             "index.html",
             {"error": str(exc), "url": url, "brand_voice": brand_voice},
             status_code=400,
+        )
+    except Exception as exc:
+        logger.exception("Scan failed unexpectedly")
+        return templates.TemplateResponse(
+            request,
+            "index.html",
+            {
+                "error": "The scan failed unexpectedly. Check the deployment logs for the Python traceback.",
+                "url": url,
+                "brand_voice": brand_voice,
+            },
+            status_code=500,
         )
 
     return templates.TemplateResponse(

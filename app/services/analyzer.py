@@ -1,7 +1,7 @@
 import json
+import logging
 
-from openai import OpenAI
-from pydantic import ValidationError
+from openai import OpenAI, OpenAIError
 
 from app.config import get_settings
 from app.schemas import AuditIssue, AuditResult, ExtractedPage, RewriteSuggestion, Scorecard
@@ -9,6 +9,9 @@ from app.schemas import AuditIssue, AuditResult, ExtractedPage, RewriteSuggestio
 from .phrase_flags import estimate_ai_sludge_risk, find_phrase_flags
 from .scoring import calculate_overall_score, verdict_for_score
 from .spec_loader import load_rewrite_rules, load_scoring_guide
+
+
+logger = logging.getLogger(__name__)
 
 
 def analyze_page(page: ExtractedPage, brand_voice: str | None) -> AuditResult:
@@ -19,24 +22,44 @@ def analyze_page(page: ExtractedPage, brand_voice: str | None) -> AuditResult:
     client = OpenAI(api_key=settings.openai_api_key)
     payload = _analysis_payload(page, brand_voice)
 
-    response = client.responses.parse(
-        model=settings.openai_model,
-        input=[
-            {
-                "role": "system",
-                "content": (
-                    "You are a brand voice and clarity auditor. Return only structured data. "
-                    "Preserve source claims, never invent proof, and label inferred voice carefully."
-                ),
-            },
-            {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
-        ],
-        text_format=AuditResult,
-    )
+    try:
+        response = client.responses.parse(
+            model=settings.openai_model,
+            input=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a brand voice and clarity auditor. Return only structured data. "
+                        "Preserve source claims, never invent proof, and label inferred voice carefully."
+                    ),
+                },
+                {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+            ],
+            text_format=AuditResult,
+        )
+    except OpenAIError:
+        logger.exception("OpenAI audit request failed; returning local draft result")
+        return _local_draft_result(
+            page,
+            brand_voice,
+            note="OpenAI analysis failed, so this result uses the local draft checker.",
+        )
+    except Exception:
+        logger.exception("Unexpected audit request failure; returning local draft result")
+        return _local_draft_result(
+            page,
+            brand_voice,
+            note="Structured analysis failed, so this result uses the local draft checker.",
+        )
 
     parsed = response.output_parsed
     if not parsed:
-        raise RuntimeError("OpenAI returned no structured audit result.")
+        logger.error("OpenAI returned no structured audit result; returning local draft result")
+        return _local_draft_result(
+            page,
+            brand_voice,
+            note="OpenAI returned no structured result, so this result uses the local draft checker.",
+        )
 
     return _normalize_result(parsed)
 
@@ -67,7 +90,7 @@ def _normalize_result(result: AuditResult) -> AuditResult:
     return result.model_copy(update={"overall_score": overall, "verdict": verdict_for_score(overall)})
 
 
-def _local_draft_result(page: ExtractedPage, brand_voice: str | None) -> AuditResult:
+def _local_draft_result(page: ExtractedPage, brand_voice: str | None, note: str | None = None) -> AuditResult:
     text = page.combined_text
     hits = find_phrase_flags(text)
     ai_risk = estimate_ai_sludge_risk(text)
@@ -114,6 +137,14 @@ def _local_draft_result(page: ExtractedPage, brand_voice: str | None) -> AuditRe
 
     rewrites = _draft_rewrites(page, issues)
 
+    voice_summary = [
+        "inferred voice, not confirmed" if not brand_voice else "provided brand voice used",
+        "Prefer plain, concrete claims over polished category language.",
+        "Use specific nouns, proof points, and action-oriented CTAs.",
+    ]
+    if note:
+        voice_summary.insert(0, note)
+
     return AuditResult(
         overall_score=overall,
         verdict=verdict_for_score(overall),
@@ -123,11 +154,7 @@ def _local_draft_result(page: ExtractedPage, brand_voice: str | None) -> AuditRe
         ai_sludge_risk=ai_risk,
         top_issues=issues[:6],
         line_level_rewrites=rewrites,
-        voice_summary=[
-            "inferred voice, not confirmed" if not brand_voice else "provided brand voice used",
-            "Prefer plain, concrete claims over polished category language.",
-            "Use specific nouns, proof points, and action-oriented CTAs.",
-        ],
+        voice_summary=voice_summary,
         recommended_next_action="Add concrete proof and replace generic benefit language before expanding the page scan.",
     )
 
