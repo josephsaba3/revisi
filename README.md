@@ -1,4 +1,4 @@
-Skill that audits you brand's voice against a design.md/product.md/brand-voice.md document and ranks it based on several metrics:
+Skill that audits your website's content against your brand's voice (inferred or by using design.md/product.md/brand-voice.md document) and ranks it based on several metrics:
 
 - Brand Fit
 - Audience Fit
