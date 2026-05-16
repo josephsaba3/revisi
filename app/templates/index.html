@@ -1,29 +1,62 @@
 {% extends "base.html" %}
 
-{% block title %}Scan a Page - Brand Voice Auditor{% endblock %}
+{% block title %}Revisi - Submit for Audit{% endblock %}
 
 {% block content %}
-<section class="scan-layout">
-  <div class="intro">
-    <p class="eyebrow">One-page MVP scan</p>
-    <h1>Check whether a page sounds clear, credible, and on-brand.</h1>
-    <p class="lede">Scan one URL, extract the visible copy, and get page issues with line-level rewrite suggestions.</p>
-  </div>
+<section class="landing-page">
+  <header class="brand-lockup" aria-label="Revisi by SplitPea">
+    <div class="wordmark">revisi<span aria-hidden="true"></span></div>
+    <p>By SplitPea</p>
+  </header>
 
-  <form class="scan-form" action="/scan" method="post" enctype="multipart/form-data">
+  <form class="scan-card" action="/scan" method="post" enctype="multipart/form-data">
     {% if error %}
       <div class="alert">{{ error }}</div>
     {% endif %}
-    <label for="url">Page URL</label>
-    <input id="url" name="url" type="url" placeholder="https://example.com" value="{{ url or '' }}" required>
 
-    <label for="brand_voice">Brand voice guide</label>
-    <textarea id="brand_voice" name="brand_voice" rows="8" placeholder="Optional. Paste voice notes, audience context, or examples. If blank, the app will infer a provisional voice.">{{ brand_voice or '' }}</textarea>
+    <div class="field-group primary-url">
+      <label for="url">Website URL</label>
+      <div class="url-entry">
+        <input id="url" name="url" type="url" placeholder="https://example.com" value="{{ url or '' }}" required>
+        <button type="submit">Scan page</button>
+      </div>
+    </div>
 
-    <label for="brand_voice_file">Or upload brand voice</label>
-    <input id="brand_voice_file" name="brand_voice_file" type="file" accept=".txt,.md,.markdown,.json">
+    <section class="depth-picker" aria-labelledby="depth-heading">
+      <div>
+        <p class="section-kicker">How deep?</p>
+        <h1 id="depth-heading">Pick the depth of the audit.</h1>
+      </div>
 
-    <button type="submit">Scan page</button>
+      <div class="depth-options" role="radiogroup" aria-label="Audit depth">
+        <label class="depth-option active">
+          <input type="radio" name="depth" value="quick" checked>
+          <span>Quick scan</span>
+          <small>Live now. One page, core metrics, practical next steps.</small>
+        </label>
+        <label class="depth-option disabled" aria-disabled="true">
+          <input type="radio" name="depth" value="deep" disabled>
+          <span>Deep read</span>
+          <small>Coming soon. More pages, stronger pattern detection.</small>
+        </label>
+        <label class="depth-option disabled" aria-disabled="true">
+          <input type="radio" name="depth" value="full" disabled>
+          <span>Full voice map</span>
+          <small>Coming soon. Brand-wide guidance and reusable rules.</small>
+        </label>
+      </div>
+    </section>
+
+    <details class="voice-details">
+      <summary>Add brand voice context</summary>
+      <div class="voice-fields">
+        <label for="brand_voice">Brand voice guide</label>
+        <textarea id="brand_voice" name="brand_voice" rows="7" placeholder="Optional. Paste voice notes, audience context, or examples. If blank, Revisi will infer a provisional voice.">{{ brand_voice or '' }}</textarea>
+
+        <label for="brand_voice_file">Or upload brand voice</label>
+        <input id="brand_voice_file" name="brand_voice_file" type="file" accept=".txt,.md,.markdown,.json">
+      </div>
+    </details>
   </form>
 </section>
 {% endblock %}

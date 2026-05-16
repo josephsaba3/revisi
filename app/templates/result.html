@@ -1,138 +1,193 @@
 {% extends "base.html" %}
 
-{% block title %}Page Scan Result - Brand Voice Auditor{% endblock %}
+{% block title %}Revisi - Audit Report{% endblock %}
 
 {% block content %}
-<section class="result-header">
-  <div>
-    <p class="eyebrow">Page scan result</p>
-    <h1>{{ page.verdict }}</h1>
-    <a class="url" href="{{ page.url }}" target="_blank" rel="noreferrer">{{ page.url }}</a>
-  </div>
-  <div class="score-box">
-    <span class="score">{{ page.overall_score }}</span>
-    <span class="score-label">Overall</span>
-  </div>
-</section>
+<article class="report-page">
+  <header class="report-hero">
+    <nav class="report-nav" aria-label="Report actions">
+      <a class="mini-brand" href="/">revisi</a>
+      <a class="back-link" href="/">Scan another page</a>
+    </nav>
+    <div class="report-score">
+      <span>{{ page.overall_score }}</span>
+      <em>out of 100</em>
+    </div>
+    <div class="report-title">
+      <p class="section-kicker">The Revisi Report</p>
+      <h1>{{ page.verdict }}</h1>
+      <a class="url" href="{{ page.url }}" target="_blank" rel="noreferrer">{{ page.url }}</a>
+    </div>
+  </header>
 
-<section class="summary-grid">
-  <div class="panel">
-    <h2>Scan Details</h2>
-    <dl>
-      <dt>Brand voice source</dt>
-      <dd>{{ scan.brand_voice_source }}</dd>
-      <dt>Scoring context</dt>
-      <dd>{{ page.scoring_context }}</dd>
-      <dt>AI sludge risk</dt>
-      <dd>{{ page.ai_sludge_risk }} / 100</dd>
-    </dl>
-  </div>
-  <div class="panel">
-    <h2>Recommended Next Action</h2>
-    <p>{{ page.recommended_next_action }}</p>
-  </div>
-</section>
-
-<section class="panel">
-  <h2>Scorecard</h2>
-  <div class="scorecard">
-    {% for label, key in [
-      ("Brand Fit", "brand_fit"),
-      ("Audience Fit", "audience_fit"),
-      ("Clarity", "clarity"),
-      ("Human Sound", "human_sound"),
-      ("Specificity", "specificity"),
-      ("Trust", "trust"),
-      ("Distinctiveness", "distinctiveness")
-    ] %}
-      <div class="metric">
-        <span>{{ label }}</span>
-        <strong>{{ page.scores[key] }}</strong>
+  <section class="report-section intro-section">
+    <div class="section-number">01</div>
+    <div class="section-body intro-grid">
+      <div>
+        <p class="section-kicker">The read</p>
+        <h2>What the page is doing right now.</h2>
       </div>
-    {% endfor %}
-  </div>
-</section>
+      <div class="fact-list">
+        <dl>
+          <dt>Brand voice source</dt>
+          <dd>{{ scan.brand_voice_source }}</dd>
+          <dt>Scoring context</dt>
+          <dd>{{ page.scoring_context }}</dd>
+          <dt>AI slop risk</dt>
+          <dd>{{ page.ai_sludge_risk }} / 100</dd>
+        </dl>
+        <p>{{ page.recommended_next_action }}</p>
+      </div>
+    </div>
+  </section>
 
-<section class="panel">
-  <h2>Extracted Page Copy</h2>
-  <div class="extract-grid">
-    <div>
-      <h3>Title</h3>
-      <p>{{ page.title or "No title found" }}</p>
+  <section class="report-section numbers-section">
+    <div class="section-number">02</div>
+    <div class="section-body">
+      <p class="section-kicker">By the numbers</p>
+      <h2>The agreed metrics, scored against this page.</h2>
+      <div class="metric-grid">
+        {% for label, key in [
+          ("Brand Fit", "brand_fit"),
+          ("Audience Fit", "audience_fit"),
+          ("Clarity", "clarity"),
+          ("Human Sound", "human_sound"),
+          ("Specificity", "specificity"),
+          ("Trust", "trust"),
+          ("Distinctiveness", "distinctiveness")
+        ] %}
+          <article class="metric-tile">
+            <span>{{ label }}</span>
+            <strong>{{ page.scores[key] }}</strong>
+          </article>
+        {% endfor %}
+        <article class="metric-tile risk">
+          <span>AI Slop Risk</span>
+          <strong>{{ page.ai_sludge_risk }}</strong>
+        </article>
+      </div>
     </div>
-    <div>
-      <h3>Meta Description</h3>
-      <p>{{ page.meta_description or "No meta description found" }}</p>
+  </section>
+
+  <section class="report-section receipts-section">
+    <div class="section-number">03</div>
+    <div class="section-body">
+      <p class="section-kicker">What works (or not)</p>
+      <h2>The useful parts and the parts dragging the copy down.</h2>
+      <div class="works-grid">
+        <section class="works-column positive">
+          <h3>What works</h3>
+          <ul class="clean-list">
+            {% for item in page.voice_summary %}
+              <li>{{ item }}</li>
+            {% endfor %}
+            {% if page.scores["clarity"] >= 75 %}
+              <li>The page is broadly clear enough for a reader to follow.</li>
+            {% endif %}
+            {% if page.scores["trust"] >= 75 %}
+              <li>The copy has a credible base to build from.</li>
+            {% endif %}
+            {% if page.scores["specificity"] >= 75 %}
+              <li>There are enough concrete details to avoid sounding interchangeable.</li>
+            {% endif %}
+          </ul>
+        </section>
+        <section class="works-column negative">
+          <h3>What's not</h3>
+          {% if issues %}
+            <div class="issue-stack">
+              {% for issue in issues %}
+                <article class="issue-card">
+                  <span class="priority">{{ issue.priority }}</span>
+                  <h4>{{ issue.issue_type }}</h4>
+                  <p class="quote">{{ issue.original_copy }}</p>
+                  <p>{{ issue.explanation }}</p>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p>No high-priority issues came back from the scan.</p>
+          {% endif %}
+        </section>
+      </div>
+
+      <aside class="slop-watchlist">
+        <div>
+          <p class="section-kicker">The slop watchlist</p>
+          <h3>Terms that look like AI slop</h3>
+        </div>
+        {% if slop_terms %}
+          <div class="term-list">
+            {% for hit in slop_terms %}
+              <span>{{ hit.phrase }} <em>{{ hit.count }}</em></span>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p>No flagged AI-slop terms found in the extracted copy.</p>
+        {% endif %}
+      </aside>
     </div>
-    <div>
-      <h3>H1 / H2s</h3>
-      {% if page.headings %}
-        <ul>{% for heading in page.headings %}<li>{{ heading }}</li>{% endfor %}</ul>
+  </section>
+
+  <section class="report-section recommendations-section">
+    <div class="section-number">04</div>
+    <div class="section-body">
+      <p class="section-kicker">The fix list</p>
+      <h2>Recommendations you can act on.</h2>
+      {% if rewrites %}
+        <div class="recommendation-list">
+          {% for rewrite in rewrites %}
+            <article class="recommendation">
+              <div class="recommendation-copy">
+                <span class="source">{{ rewrite.source }}</span>
+                <p class="quote">{{ rewrite.original }}</p>
+                <p>{{ rewrite.reason }}</p>
+              </div>
+              <div class="rewrite-output">
+                <p>{{ rewrite.rewrite }}</p>
+                <button type="button" data-copy="{{ rewrite.rewrite }}">Copy</button>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
       {% else %}
-        <p>No H1/H2 headings found.</p>
+        <p>No line-level recommendations returned for this scan.</p>
       {% endif %}
     </div>
-    <div>
-      <h3>CTAs</h3>
-      {% if page.ctas %}
-        <ul>{% for cta in page.ctas %}<li>{{ cta }}</li>{% endfor %}</ul>
-      {% else %}
-        <p>No clear CTAs detected.</p>
-      {% endif %}
+  </section>
+
+  <section class="report-section source-section">
+    <div class="section-number">05</div>
+    <div class="section-body">
+      <p class="section-kicker">Source scan</p>
+      <h2>The page elements Revisi used.</h2>
+      <div class="extract-grid">
+        <div>
+          <h3>Title</h3>
+          <p>{{ page.title or "No title found" }}</p>
+        </div>
+        <div>
+          <h3>Meta Description</h3>
+          <p>{{ page.meta_description or "No meta description found" }}</p>
+        </div>
+        <div>
+          <h3>H1 / H2s</h3>
+          {% if page.headings %}
+            <ul>{% for heading in page.headings %}<li>{{ heading }}</li>{% endfor %}</ul>
+          {% else %}
+            <p>No H1/H2 headings found.</p>
+          {% endif %}
+        </div>
+        <div>
+          <h3>CTAs</h3>
+          {% if page.ctas %}
+            <ul>{% for cta in page.ctas %}<li>{{ cta }}</li>{% endfor %}</ul>
+          {% else %}
+            <p>No clear CTAs detected.</p>
+          {% endif %}
+        </div>
+      </div>
     </div>
-  </div>
-</section>
-
-<section class="panel">
-  <h2>Page Issues</h2>
-  {% if issues %}
-    <div class="issue-list">
-      {% for issue in issues %}
-        <article class="issue">
-          <div>
-            <span class="priority">{{ issue.priority }}</span>
-            <h3>{{ issue.issue_type }}</h3>
-          </div>
-          <p class="quote">{{ issue.original_copy }}</p>
-          <p>{{ issue.explanation }}</p>
-          <p><strong>Suggested rewrite:</strong> {{ issue.suggested_rewrite }}</p>
-        </article>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p>No high-priority issues found.</p>
-  {% endif %}
-</section>
-
-<section class="panel">
-  <h2>Line-Level Rewrites</h2>
-  {% if rewrites %}
-    <div class="rewrite-list">
-      {% for rewrite in rewrites %}
-        <article class="rewrite">
-          <p class="source">{{ rewrite.source }}</p>
-          <p class="quote">{{ rewrite.original }}</p>
-          <div class="rewrite-output">
-            <p>{{ rewrite.rewrite }}</p>
-            <button type="button" data-copy="{{ rewrite.rewrite }}">Copy</button>
-          </div>
-          <p>{{ rewrite.reason }}</p>
-        </article>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p>No line-level rewrites returned.</p>
-  {% endif %}
-</section>
-
-<section class="panel">
-  <h2>Generated Mini Voice Guide</h2>
-  <ul>
-    {% for item in page.voice_summary %}
-      <li>{{ item }}</li>
-    {% endfor %}
-  </ul>
-</section>
-
-<a class="back-link" href="/">Scan another page</a>
+  </section>
+</article>
 {% endblock %}

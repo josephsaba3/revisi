@@ -10,3 +10,4 @@ server.err.log
 node_modules/
 .wrangler/
 dist/
+brand-voice-auditor.code-workspace

@@ -12,6 +12,7 @@ from .database import get_db, init_db
 from .schemas import AuditResult
 from .services.analyzer import analyze_page
 from .services.extractor import FetchError, extract_visible_copy, fetch_html, normalize_url
+from .services.phrase_flags import find_phrase_flags
 
 
 logger = logging.getLogger(__name__)
@@ -72,12 +73,7 @@ async def scan(
     return templates.TemplateResponse(
         request,
         "result.html",
-        {
-            "scan": scan_model,
-            "page": scan_model.page_result,
-            "issues": scan_model.page_result.issues,
-            "rewrites": scan_model.page_result.rewrites,
-        },
+        _result_template_context(scan_model),
     )
 
 
@@ -89,12 +85,7 @@ def result(request: Request, public_token: str, db: Session = Depends(get_db)) -
     return templates.TemplateResponse(
         request,
         "result.html",
-        {
-            "scan": scan_model,
-            "page": scan_model.page_result,
-            "issues": scan_model.page_result.issues,
-            "rewrites": scan_model.page_result.rewrites,
-        },
+        _result_template_context(scan_model),
     )
 
 
@@ -161,3 +152,18 @@ def _save_scan(
     db.commit()
     db.refresh(scan_model)
     return scan_model
+
+
+def _result_template_context(scan_model: models.Scan) -> dict:
+    page = scan_model.page_result
+    extracted_text = "\n".join(
+        line.get("text", "") for line in (page.extracted_copy or []) if isinstance(line, dict)
+    )
+    slop_terms = find_phrase_flags(extracted_text)
+    return {
+        "scan": scan_model,
+        "page": page,
+        "issues": page.issues,
+        "rewrites": page.rewrites,
+        "slop_terms": slop_terms,
+    }
