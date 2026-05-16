@@ -160,10 +160,60 @@ def _result_template_context(scan_model: models.Scan) -> dict:
         line.get("text", "") for line in (page.extracted_copy or []) if isinstance(line, dict)
     )
     slop_terms = find_phrase_flags(extracted_text)
+    score_map = page.scores or {}
+    metric_rows = [
+        {
+            "label": "Brand Fit",
+            "key": "brand_fit",
+            "value": score_map.get("brand_fit", 0),
+            "desc": "How closely the page matches the intended voice and avoids tone drift.",
+        },
+        {
+            "label": "Audience Fit",
+            "key": "audience_fit",
+            "value": score_map.get("audience_fit", 0),
+            "desc": "Whether the copy speaks to the right reader, situation, and buying stage.",
+        },
+        {
+            "label": "Clarity",
+            "key": "clarity",
+            "value": score_map.get("clarity", 0),
+            "desc": "How quickly a reader can understand the offer, value, and next step.",
+        },
+        {
+            "label": "Human Sound",
+            "key": "human_sound",
+            "value": score_map.get("human_sound", 0),
+            "desc": "Whether the copy feels natural, specific, and free of generated polish.",
+        },
+        {
+            "label": "Specificity",
+            "key": "specificity",
+            "value": score_map.get("specificity", 0),
+            "desc": "How much concrete detail, proof, workflow, or real-world texture is present.",
+        },
+        {
+            "label": "Trust",
+            "key": "trust",
+            "value": score_map.get("trust", 0),
+            "desc": "Whether claims feel supported, transparent, and believable.",
+        },
+        {
+            "label": "Distinctiveness",
+            "key": "distinctiveness",
+            "value": score_map.get("distinctiveness", 0),
+            "desc": "How hard the page is to confuse with another brand in the same category.",
+        },
+    ]
+    word_count = len(extracted_text.split())
+    sentence_count = extracted_text.count(".") + extracted_text.count("?") + extracted_text.count("!")
     return {
         "scan": scan_model,
         "page": page,
         "issues": page.issues,
         "rewrites": page.rewrites,
         "slop_terms": slop_terms,
+        "metric_rows": metric_rows,
+        "word_count": word_count,
+        "sentence_count": sentence_count,
     }
