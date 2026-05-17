@@ -1,62 +1,181 @@
 {% extends "base.html" %}
 
 {% block title %}Revisi - Submit for Audit{% endblock %}
-  
+{% block main_class %}app-root{% endblock %}
+
 {% block content %}
-<section class="landing-page">
-  <header class="brand-lockup" aria-label="Revisi by SplitPea">
-    <div class="wordmark">revisi<span aria-hidden="true"></span></div>
-    <p>By SplitPea </p>
+<form id="scan-form" class="page" action="/scan" method="post" enctype="multipart/form-data">
+  <header class="topbar">
+    <a class="wordmark" href="/" aria-label="Revisi by SplitPea">
+      <span class="name">revisi</span>
+      <span class="by"><span class="pea-dot"></span>by SplitPea</span>
+    </a>
+    <nav class="topnav" aria-label="Primary navigation">
+      <a href="/" class="active">New audit</a>
+      <a href="#" aria-disabled="true">Library</a>
+      <a href="#" aria-disabled="true">Guidelines</a>
+      <a href="#" aria-disabled="true">Account</a>
+    </nav>
+    <div class="topbar-cta">
+      <button class="btn btn-outline" type="button">Sign in</button>
+      <button class="btn btn-green" type="button">14 credits</button>
+    </div>
   </header>
 
-  <form class="scan-card" action="/scan" method="post" enctype="multipart/form-data">
-    {% if error %}
-      <div class="alert">{{ error }}</div>
-    {% endif %}
-
-    <div class="field-group primary-url">
-      <label for="url">Website URL</label>
-      <div class="url-entry">
-        <input id="url" name="url" type="url" placeholder="https://example.com" value="{{ url or '' }}" required>
-        <button type="submit">Scan page</button>
+  <section class="hero">
+    <h1>
+      Read the site.<br>
+      <span class="em">Mark</span> what to revise.
+    </h1>
+    <div class="hero-right">
+      <p class="hero-lede">
+        Revisi reads your website against the design guide you wrote for it. It flags the places your voice slips, where sentences run long, and the words that <em>sound like a machine wrote them</em>.
+      </p>
+      <div class="spec-grid" aria-label="Audit benchmarks">
+        <div class="cell">
+          <div class="k">Median read</div>
+          <div class="v">2m 14s</div>
+        </div>
+        <div class="cell">
+          <div class="k">Audits this week</div>
+          <div class="v">1,829</div>
+        </div>
+        <div class="cell">
+          <div class="k">Avg. score lift</div>
+          <div class="v">+18 pts</div>
+        </div>
       </div>
     </div>
+  </section>
 
-    <section class="depth-picker" aria-labelledby="depth-heading">
-      <div>
-        <p class="section-kicker">How deep?</p>
-        <h1 id="depth-heading">Pick the depth of the audit.</h1>
+  <section class="submission">
+    <aside class="submission-aside">
+      <div class="section-mark">
+        <div class="num">01</div>
+        <div class="h">Submit a site.</div>
+        <div class="p">A URL and your design guide are all we need. We read both. We do not store the page content.</div>
       </div>
 
-      <div class="depth-options" role="radiogroup" aria-label="Audit depth">
-        <label class="depth-option active">
-          <input type="radio" name="depth" value="quick" checked>
-          <span>Quick scan</span>
-          <small>Live now. One page, core metrics, practical next steps.</small>
-        </label>
-        <label class="depth-option disabled" aria-disabled="true">
-          <input type="radio" name="depth" value="deep" disabled>
-          <span>Deep read</span>
-          <small>Coming soon. More pages, stronger pattern detection.</small>
-        </label>
-        <label class="depth-option disabled" aria-disabled="true">
-          <input type="radio" name="depth" value="full" disabled>
-          <span>Full voice map</span>
-          <small>Coming soon. Brand-wide guidance and reusable rules.</small>
-        </label>
+      <div class="callout">
+        <div class="pre">A note on the guide</div>
+        <div class="h">Bring your <em>design.md</em>.</div>
+        <div class="p">That is where your voice rules live: banned words, tone, how you want to sound. Without it, Revisi infers a provisional voice.</div>
       </div>
-    </section>
+    </aside>
 
-    <details class="voice-details">
-      <summary>Add brand voice context</summary>
-      <div class="voice-fields">
-        <label for="brand_voice">Brand voice guide</label>
-        <textarea id="brand_voice" name="brand_voice" rows="7" placeholder="Optional. Paste voice notes, audience context, or examples. If blank, Revisi will infer a provisional voice.">{{ brand_voice or '' }}</textarea>
+    <div class="form-stack">
+      {% if error %}
+        <div class="alert">{{ error }}</div>
+      {% endif %}
 
-        <label for="brand_voice_file">Or upload brand voice</label>
-        <input id="brand_voice_file" name="brand_voice_file" type="file" accept=".txt,.md,.markdown,.json">
+      <div class="field">
+        <div class="field-head">
+          <label class="lbl" for="url-input">The <em>URL</em>.</label>
+          <div class="hint" id="url-hint">Required</div>
+        </div>
+        <div class="url-input" id="url-box">
+          <span class="scheme">https://</span>
+          <input id="url-input" name="url" type="text" placeholder="acme.com/about" value="{{ url or '' }}" spellcheck="false" autocomplete="url" required>
+          <span class="status" id="url-status">Awaiting</span>
+        </div>
+        <div class="url-suggest">
+          <span class="recent-label">Recent</span>
+          <button class="chip" type="button" data-url="stripe.com">stripe.com</button>
+          <button class="chip" type="button" data-url="linear.app">linear.app</button>
+          <button class="chip" type="button" data-url="vercel.com">vercel.com</button>
+          <button class="chip" type="button" data-url="notion.so">notion.so</button>
+          <button class="chip" type="button" data-url="your-staging.dev">your-staging.dev</button>
+        </div>
       </div>
-    </details>
-  </form>
-</section>
+
+      <div class="field">
+        <div class="field-head">
+          <label class="lbl" for="file-input">The <em>guide</em>.</label>
+          <div class="hint">md / txt optional</div>
+        </div>
+        <div class="drop" id="drop">
+          <div class="icon" id="drop-icon">MD</div>
+          <div class="body">
+            <div class="t1" id="drop-t1">Drop design.md here, or click to pick a file.</div>
+            <div class="t2" id="drop-t2">We look for headings like Voice, Banned, Tone, Anti-references.</div>
+          </div>
+          <div class="meta" id="drop-meta">
+            <span>md / mdx / txt</span>
+          </div>
+          <input id="file-input" name="brand_voice_file" type="file" accept=".md,.mdx,.txt,.markdown,.json,text/markdown,text/plain,application/json" hidden>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-head">
+          <div class="lbl">How <em>deep</em>?</div>
+          <div class="hint">Audit scope</div>
+        </div>
+        <input id="depth-input" type="hidden" name="depth" value="scan">
+        <div class="options" id="options">
+          <button class="opt on" type="button" data-depth="scan">
+            <span class="marker"></span>
+            <span class="name">Quick scan</span>
+            <span class="desc">One page, live now</span>
+          </button>
+          <button class="opt" type="button" data-depth="site" aria-disabled="true">
+            <span class="marker"></span>
+            <span class="name">Whole site</span>
+            <span class="desc">Up to 25 pages, soon</span>
+          </button>
+          <button class="opt" type="button" data-depth="deep" aria-disabled="true">
+            <span class="marker"></span>
+            <span class="name">Deep read</span>
+            <span class="desc">Includes blog, soon</span>
+          </button>
+          <button class="opt" type="button" data-depth="comp" aria-disabled="true">
+            <span class="marker"></span>
+            <span class="name">Comparative</span>
+            <span class="desc">Vs. competitors, soon</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="voice-inline">
+        <label for="brand_voice">Paste voice notes instead</label>
+        <textarea id="brand_voice" name="brand_voice" rows="5" placeholder="Optional. Paste voice notes, audience context, examples, or banned phrases.">{{ brand_voice or '' }}</textarea>
+      </div>
+
+      <div class="submit-row">
+        <div class="submit-cost">
+          <div class="a">Cost: 1 audit credit</div>
+          <div class="b">You have <span class="pea">14 credits</span> left.</div>
+        </div>
+        <button class="btn-submit" id="submit-btn" type="submit" disabled>
+          Run the audit
+          <span class="arrow">-&gt;</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="left">
+      <span><span class="pea">&bull;</span> by SplitPea</span>
+      <span>The small-team toolkit for testing modern websites</span>
+    </div>
+    <div class="right">2026 - splitpea.com/revisi</div>
+  </footer>
+</form>
+
+<div class="loader" id="loader" aria-hidden="true">
+  <div class="loader-card">
+    <div class="pre">Reading</div>
+    <h2>Hang on. Reading the site.</h2>
+    <div class="log" id="log">
+      <div class="row"><span class="num"></span><span>Fetching pages, stripping chrome</span><span class="t">00:01</span></div>
+      <div class="row"><span class="num"></span><span>Parsing design guide for voice rules</span><span class="t">00:04</span></div>
+      <div class="row"><span class="num"></span><span>Sampling sentences for readability</span><span class="t">00:09</span></div>
+      <div class="row"><span class="num"></span><span>Cross-referencing AI tell-words</span><span class="t">00:14</span></div>
+      <div class="row"><span class="num"></span><span>Scoring consistency against the guide</span><span class="t">00:21</span></div>
+      <div class="row"><span class="num"></span><span>Writing the editor notes</span><span class="t">00:27</span></div>
+    </div>
+    <div class="progress"><div class="bar" id="progress-bar"></div></div>
+  </div>
+</div>
 {% endblock %}
