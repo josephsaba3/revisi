@@ -16,6 +16,41 @@
     }
   });
 
+  document.addEventListener("click", async (event) => {
+    const exportButton = event.target.closest("[data-export-pdf]");
+    if (exportButton) {
+      window.print();
+      return;
+    }
+
+    const shareButton = event.target.closest("[data-share-report]");
+    if (!shareButton) return;
+
+    const original = shareButton.textContent;
+    const shareData = {
+      title: document.title || "Revisi audit report",
+      text: "Revisi audit report",
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        shareButton.textContent = "Link copied";
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        shareButton.textContent = "Share failed";
+      }
+    } finally {
+      window.setTimeout(() => {
+        shareButton.textContent = original;
+      }, 1400);
+    }
+  });
+
   const form = document.getElementById("scan-form");
   const urlInput = document.getElementById("url-input");
   const urlBox = document.getElementById("url-box");
@@ -256,7 +291,7 @@
         const elapsed = formatElapsed(step.elapsed_seconds);
         const rowClass = status === "done" ? "row done" : status === "running" ? "row on" : status === "error" ? "row error" : "row";
         const marker = status === "done" ? "done" : status === "running" ? "now" : status === "error" ? "stop" : "wait";
-        const suffix = step.key === "openai" && status === "running" ? " This is usually the longest step." : "";
+        const suffix = step.key === "models" && status === "running" ? " This is usually the longest step." : "";
         return `<div class="${rowClass}"><span class="num">${marker}</span><span>${escapeHtml(label + suffix)}</span><span class="t">${elapsed}</span></div>`;
       }).join("");
     }

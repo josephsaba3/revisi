@@ -159,16 +159,26 @@ button:disabled {
   font-weight: 500;
 }
 
-.topnav a {
+.topnav a,
+.topnav button {
   border-radius: var(--r-pill);
   padding: 8px 12px;
   transition: color 0.15s, background 0.15s;
 }
 
 .topnav a:hover,
-.topnav a.active {
+.topnav a.active,
+.topnav button:hover {
   background: var(--soft-cream);
   color: var(--pea);
+}
+
+.topnav button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
 }
 
 .topnav .dot {
@@ -1783,5 +1793,23 @@ button:disabled {
   .masthead .center,
   .action-row h3 {
     font-size: 44px;
+  }
+}
+
+@media print {
+  .topbar,
+  .action-buttons,
+  .actions,
+  .loader {
+    display: none !important;
+  }
+
+  body {
+    background: var(--paper);
+  }
+
+  .page {
+    width: auto;
+    padding: 0;
   }
 }

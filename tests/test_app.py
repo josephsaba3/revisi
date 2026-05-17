@@ -98,8 +98,26 @@ def test_save_scan_accepts_long_report_text(db_session) -> None:
             distinctiveness=70,
         ),
         ai_sludge_risk=20,
-        top_issues=[],
-        line_level_rewrites=[],
+        top_issues=[
+            AuditIssue(
+                issue_type="Too vague",
+                priority="Medium",
+                source="P",
+                line_id="L001",
+                original_copy="Useful page copy.",
+                explanation="Needs more detail.",
+                suggested_rewrite="Add the concrete task and result.",
+            )
+        ],
+        line_level_rewrites=[
+            RewriteSuggestion(
+                source="P",
+                line_id="L031",
+                original="Useful page copy.",
+                rewrite="Show the task, reader, and result.",
+                reason="More specific.",
+            )
+        ],
         voice_summary=["Plain and direct"],
         recommended_next_action="Tighten the hero and product-section intro first.",
     )
@@ -152,8 +170,13 @@ def test_result_page_renders(db_session) -> None:
 
     assert response.status_code == 200
     assert "Revisi Brand Audit Report" in response.text
+    assert "Export PDF" in response.text
+    assert "Share" in response.text
     assert "Lower-confidence result" in response.text
     assert "Plain and direct" in response.text
+    assert "Keep this direction visible when revising the page." not in response.text
+    assert "L001" not in response.text
+    assert "L031" not in response.text
 
 
 def test_scan_rate_limit_blocks_repeated_posts(monkeypatch) -> None:
@@ -215,6 +238,23 @@ def test_scan_progress_returns_done_report_url() -> None:
         payload = response.json()
         assert payload["status"] == "done"
         assert payload["report_url"] == "/r/test-token"
+    finally:
+        _scan_jobs.clear()
+
+
+def test_scan_progress_labels_are_provider_neutral() -> None:
+    _scan_jobs.clear()
+    job_id = _create_scan_job()
+    client = TestClient(app)
+
+    try:
+        response = client.get(f"/scan/progress/{job_id}")
+
+        assert response.status_code == 200
+        labels = [step["label"] for step in response.json()["steps"]]
+        assert "Preparing audit brief" in labels
+        assert "Waiting for models to finish" in labels
+        assert not any("GPT" in label or "OpenAI" in label for label in labels)
     finally:
         _scan_jobs.clear()
 

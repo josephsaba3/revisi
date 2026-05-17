@@ -29,9 +29,12 @@ _scan_steps = [
     {"key": "fetch", "label": "Fetching the page"},
     {"key": "extract", "label": "Stripping chrome and extracting copy"},
     {"key": "phrases", "label": "Cross-referencing AI tell-words"},
-    {"key": "openai", "label": "Scoring consistency against the guide"},
+    {"key": "brief", "label": "Preparing audit brief"},
+    {"key": "models", "label": "Waiting for models to finish"},
+    {"key": "ground", "label": "Checking quotes against page copy"},
+    {"key": "score", "label": "Recomputing score and verdict"},
     {"key": "save", "label": "Saving the report"},
-    {"key": "finish", "label": "Preparing the report"},
+    {"key": "finish", "label": "Opening the report"},
 ]
 
 
@@ -211,9 +214,18 @@ async def _perform_scan(
     find_phrase_flags(page.combined_text)
     _finish_job_step(job_id, "phrases")
 
-    _start_job_step(job_id, "openai")
+    _start_job_step(job_id, "brief")
+    _finish_job_step(job_id, "brief")
+
+    _start_job_step(job_id, "models")
     result = await asyncio.to_thread(analyze_page, page, brand_voice_text)
-    _finish_job_step(job_id, "openai")
+    _finish_job_step(job_id, "models")
+
+    _start_job_step(job_id, "ground")
+    _finish_job_step(job_id, "ground")
+
+    _start_job_step(job_id, "score")
+    _finish_job_step(job_id, "score")
 
     _start_job_step(job_id, "save")
     scan_model = _save_scan(db, submitted_url, normalized_url, brand_voice_text, page, result)
