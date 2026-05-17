@@ -152,7 +152,23 @@ button:disabled {
 }
 
 .mobile-menu {
-  display: contents;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+  margin-left: auto;
+}
+
+.masthead .left {
+  order: 1;
+}
+
+.masthead .center {
+  order: 2;
+}
+
+.masthead .right {
+  order: 3;
 }
 
 .mobile-menu-toggle {
@@ -1816,6 +1832,7 @@ button:disabled {
     width: 100%;
     display: none;
     flex-basis: 100%;
+    margin-left: 0;
     border-top: 1px solid var(--parchment);
     padding-top: 14px;
   }

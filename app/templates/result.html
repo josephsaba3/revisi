@@ -36,13 +36,13 @@
   </header>
 
   <div class="masthead">
-    <div class="left">
-      <div><strong>Website:</strong> {{ page.url }}</div>
-      <div><strong>Design principles:</strong> {{ scan.brand_voice_source }}</div>
-    </div>
     <div class="center">
       <small>{{ page.url }}</small>
       <em>Revisi Brand Audit Report</em>
+    </div>
+    <div class="left">
+      <div><strong>Website:</strong> {{ page.url }}</div>
+      <div><strong>Design principles:</strong> {{ scan.brand_voice_source }}</div>
     </div>
     <div class="right">
       <div><strong>Issued</strong> {{ scan.created_at.strftime("%d %b %Y") if scan.created_at else "Today" }}</div>
