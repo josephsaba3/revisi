@@ -89,7 +89,7 @@ button:disabled {
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 24px;
   padding: 22px 0 18px;
   border-bottom: 1px solid var(--parchment);
@@ -174,7 +174,7 @@ button:disabled {
 .mobile-menu-toggle {
   width: 42px;
   height: 42px;
-  display: none;
+  display: none !important;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -1809,7 +1809,7 @@ button:disabled {
   }
 
   .mobile-menu-toggle {
-    display: inline-flex;
+    display: inline-flex !important;
     order: 0;
   }
 
