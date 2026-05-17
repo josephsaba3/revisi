@@ -85,7 +85,7 @@ def extract_visible_copy(html: str, url: str) -> ExtractedPage:
         if node.name in {"button", "a"} and _looks_like_cta(text):
             ctas.append(text)
             source = "CTA"
-        lines.append(ExtractedLine(source=source, text=text))
+        lines.append(ExtractedLine(line_id=f"L{len(lines) + 1:03d}", source=source, text=text))
 
     return ExtractedPage(
         url=url,

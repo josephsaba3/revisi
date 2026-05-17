@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy import text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -36,13 +36,26 @@ def init_db() -> None:
 
 
 def _ensure_existing_schema() -> None:
-    if engine.dialect.name != "postgresql":
+    statements = []
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+
+    if engine.dialect.name == "postgresql":
+        statements.extend(
+            [
+                "ALTER TABLE page_results ALTER COLUMN verdict TYPE TEXT",
+                "ALTER TABLE page_results ALTER COLUMN scoring_context TYPE TEXT",
+            ]
+        )
+
+    if "issues" in table_names and "line_id" not in {column["name"] for column in inspector.get_columns("issues")}:
+        statements.append("ALTER TABLE issues ADD COLUMN line_id VARCHAR(16)")
+    if "rewrites" in table_names and "line_id" not in {column["name"] for column in inspector.get_columns("rewrites")}:
+        statements.append("ALTER TABLE rewrites ADD COLUMN line_id VARCHAR(16)")
+
+    if not statements:
         return
 
-    statements = [
-        "ALTER TABLE page_results ALTER COLUMN verdict TYPE TEXT",
-        "ALTER TABLE page_results ALTER COLUMN scoring_context TYPE TEXT",
-    ]
     with engine.begin() as connection:
         for statement in statements:
             connection.execute(text(statement))

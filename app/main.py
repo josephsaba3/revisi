@@ -183,6 +183,7 @@ def _save_scan(
             issue_type=issue.issue_type,
             priority=issue.priority,
             source=issue.source,
+            line_id=issue.line_id,
             original_copy=issue.original_copy,
             explanation=issue.explanation,
             suggested_rewrite=issue.suggested_rewrite,
@@ -192,6 +193,7 @@ def _save_scan(
     page_model.rewrites = [
         models.Rewrite(
             source=rewrite.source,
+            line_id=rewrite.line_id,
             original=rewrite.original,
             rewrite=rewrite.rewrite,
             reason=rewrite.reason,

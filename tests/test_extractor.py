@@ -43,6 +43,7 @@ def test_extract_visible_copy_ignores_boilerplate_and_finds_ctas() -> None:
     assert "See a sample audit" in page.ctas
     assert "Scan page" in page.ctas
     assert all("Terms Privacy" not in line.text for line in page.lines)
+    assert [line.line_id for line in page.lines] == [f"L{index + 1:03d}" for index in range(len(page.lines))]
 
 
 def test_extract_visible_copy_handles_missing_title_meta() -> None:

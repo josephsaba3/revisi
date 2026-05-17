@@ -25,12 +25,14 @@ def analyze_page(page: ExtractedPage, brand_voice: str | None) -> AuditResult:
     try:
         response = client.responses.parse(
             model=settings.openai_model,
+            reasoning={"effort": settings.openai_reasoning_effort},
             input=[
                 {
                     "role": "system",
                     "content": (
                         "You are a brand voice and clarity auditor. Return only structured data. "
-                        "Preserve source claims, never invent proof, and label inferred voice carefully."
+                        "Use only the supplied evidence lines, preserve source claims, never invent proof, "
+                        "and label inferred voice carefully."
                     ),
                 },
                 {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
@@ -68,7 +70,7 @@ def analyze_page(page: ExtractedPage, brand_voice: str | None) -> AuditResult:
             note="OpenAI returned no structured result, so this result uses the local draft checker.",
         )
 
-    return _normalize_result(parsed)
+    return _normalize_result(parsed, page)
 
 
 def _analysis_payload(page: ExtractedPage, brand_voice: str | None) -> dict:
@@ -77,29 +79,37 @@ def _analysis_payload(page: ExtractedPage, brand_voice: str | None) -> dict:
         "task": "Audit this one page for brand voice, clarity, trust, specificity, AI sludge risk, and line-level rewrites.",
         "brand_voice_source": "provided" if brand_voice else "inferred voice, not confirmed",
         "brand_voice": brand_voice or "",
-        "page": page.model_dump(),
+        "page": page.model_dump(exclude={"lines"}),
+        "evidence_lines": _evidence_lines(page),
         "deterministic_phrase_hits": [hit.__dict__ for hit in find_phrase_flags(text)],
         "estimated_ai_sludge_risk": estimate_ai_sludge_risk(text),
+        "allowed_scoring_contexts": list(SCORING_CONTEXT_WEIGHTS),
         "scoring_guide": load_scoring_guide(),
         "rewrite_rules": load_rewrite_rules(),
         "constraints": [
-            "Use one of the existing scoring contexts.",
+            "Use exactly one allowed_scoring_contexts value for scoring_context.",
             "Use 2-4 contextual modifiers.",
             "Return 3-6 top issues when possible.",
             "Return 3-6 line-level rewrites when possible.",
+            "Every top issue and line-level rewrite must include a line_id from evidence_lines.",
+            "The original_copy or original field must be copied from the matching evidence line.",
             "Do not invent proof, metrics, customers, awards, guarantees, or product capabilities.",
         ],
     }
 
 
-def _normalize_result(result: AuditResult) -> AuditResult:
+def _normalize_result(result: AuditResult, page: ExtractedPage) -> AuditResult:
     scoring_context = _normalize_scoring_context(result.scoring_context)
     overall = calculate_overall_score(result.scores, scoring_context, result.ai_sludge_risk)
+    top_issues = _ground_issues(result.top_issues, page)
+    rewrites = _ground_rewrites(result.line_level_rewrites, page)
     return result.model_copy(
         update={
             "overall_score": overall,
             "verdict": verdict_for_score(overall),
             "scoring_context": scoring_context,
+            "top_issues": top_issues,
+            "line_level_rewrites": rewrites,
         }
     )
 
@@ -149,11 +159,13 @@ def _local_draft_result(page: ExtractedPage, brand_voice: str | None, note: str 
 
     issues: list[AuditIssue] = []
     for hit in hits[:5]:
+        line = _find_line_for_copy(page, hit.phrase)
         issues.append(
             AuditIssue(
                 issue_type=hit.category,
                 priority="High" if hit.category in {"AI Sludge Phrases", "Could Belong To Any Brand"} else "Medium",
-                source="Page copy",
+                source=line["source"] if line else "Page copy",
+                line_id=line["line_id"] if line else None,
                 original_copy=hit.phrase,
                 explanation=f"`{hit.phrase}` appears {hit.count} time(s) and may make the page feel less specific.",
                 suggested_rewrite="Replace this with a concrete product action, outcome, or proof point from the business.",
@@ -166,6 +178,7 @@ def _local_draft_result(page: ExtractedPage, brand_voice: str | None, note: str 
                 issue_type="Weak CTA",
                 priority="High",
                 source="Page",
+                line_id=None,
                 original_copy="No clear CTA detected",
                 explanation="The page needs a visible next step tied to what the reader wants to do.",
                 suggested_rewrite="Add a specific action such as `Send your page for review` or `See a sample audit`.",
@@ -209,9 +222,100 @@ def _draft_rewrites(page: ExtractedPage, issues: list[AuditIssue]) -> list[Rewri
         rewrites.append(
             RewriteSuggestion(
                 source=line.source,
+                line_id=_line_id(line, len(rewrites)),
                 original=line.text,
                 rewrite=rewrite,
                 reason="Draft local rewrite. Add brand-specific detail before publishing.",
             )
         )
     return rewrites
+
+
+def _evidence_lines(page: ExtractedPage) -> list[dict[str, str]]:
+    lines: list[dict[str, str]] = []
+    for index, line in enumerate(page.lines):
+        text = line.text.strip()
+        if not text:
+            continue
+        lines.append(
+            {
+                "line_id": _line_id(line, index),
+                "source": line.source,
+                "text": text[:1200],
+            }
+        )
+    return lines
+
+
+def _line_id(line, index: int) -> str:
+    return line.line_id or f"L{index + 1:03d}"
+
+
+def _ground_issues(issues: list[AuditIssue], page: ExtractedPage) -> list[AuditIssue]:
+    grounded: list[AuditIssue] = []
+    for issue in issues:
+        line = _matching_line(page, issue.line_id, issue.original_copy)
+        if not line:
+            logger.warning("Dropping ungrounded audit issue: %s", issue.original_copy[:120])
+            continue
+        grounded.append(
+            issue.model_copy(
+                update={
+                    "line_id": line["line_id"],
+                    "source": line["source"],
+                    "original_copy": _grounded_excerpt(issue.original_copy, line["text"]),
+                }
+            )
+        )
+    return grounded
+
+
+def _ground_rewrites(rewrites: list[RewriteSuggestion], page: ExtractedPage) -> list[RewriteSuggestion]:
+    grounded: list[RewriteSuggestion] = []
+    for rewrite in rewrites:
+        line = _matching_line(page, rewrite.line_id, rewrite.original)
+        if not line:
+            logger.warning("Dropping ungrounded rewrite suggestion: %s", rewrite.original[:120])
+            continue
+        grounded.append(
+            rewrite.model_copy(
+                update={
+                    "line_id": line["line_id"],
+                    "source": line["source"],
+                    "original": _grounded_excerpt(rewrite.original, line["text"]),
+                }
+            )
+        )
+    return grounded
+
+
+def _matching_line(page: ExtractedPage, line_id: str | None, quoted_copy: str) -> dict[str, str] | None:
+    evidence = _evidence_lines(page)
+    if line_id:
+        for line in evidence:
+            if line["line_id"] == line_id and _contains_copy(line["text"], quoted_copy):
+                return line
+    return _find_line_for_copy(page, quoted_copy)
+
+
+def _find_line_for_copy(page: ExtractedPage, quoted_copy: str) -> dict[str, str] | None:
+    for line in _evidence_lines(page):
+        if _contains_copy(line["text"], quoted_copy):
+            return line
+    return None
+
+
+def _contains_copy(line_text: str, quoted_copy: str) -> bool:
+    quoted = _normalized_space(quoted_copy)
+    if not quoted:
+        return False
+    return quoted.lower() in _normalized_space(line_text).lower()
+
+
+def _grounded_excerpt(quoted_copy: str, line_text: str) -> str:
+    quoted = quoted_copy.strip()
+    return quoted if quoted else line_text
+
+
+def _normalized_space(value: str) -> str:
+    return " ".join((value or "").split())

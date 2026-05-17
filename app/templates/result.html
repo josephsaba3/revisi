@@ -136,7 +136,7 @@
           <article class="evi-item">
             <div class="marker">{% if issue.priority|lower == "medium" %}!{% else %}x{% endif %}</div>
             <div class="body">
-              <div class="meta">{{ issue.source }} - {{ issue.priority }}</div>
+              <div class="meta">{{ issue.source }}{% if issue.line_id %} · {{ issue.line_id }}{% endif %} - {{ issue.priority }}</div>
               <div class="quote">{{ issue.original_copy }}</div>
               <div class="why"><strong>{{ issue.issue_type }}.</strong> {{ issue.explanation }}</div>
             </div>
@@ -219,7 +219,7 @@
           <article class="rec {% if loop.index <= 2 %}high{% elif loop.index <= 4 %}med{% else %}low{% endif %}">
             <div class="idx">{{ "%02d"|format(loop.index) }}</div>
             <div class="body">
-              <h4>Rewrite <em>{{ rewrite.source }}</em>.</h4>
+              <h4>Rewrite <em>{{ rewrite.source }}{% if rewrite.line_id %} · {{ rewrite.line_id }}{% endif %}</em>.</h4>
               <p>{{ rewrite.reason }}</p>
               <div class="rewrite-box">{{ rewrite.rewrite }}</div>
               <div class="actions">
@@ -234,7 +234,7 @@
               </div>
               <div>
                 <div class="k">Scope</div>
-                <div class="scope">{{ rewrite.source }}</div>
+                <div class="scope">{{ rewrite.line_id or rewrite.source }}</div>
               </div>
             </div>
           </article>

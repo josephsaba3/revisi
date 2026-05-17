@@ -2,7 +2,7 @@ import httpx
 from openai import RateLimitError
 
 from app.config import get_settings
-from app.schemas import AuditResult, ExtractedLine, ExtractedPage, Scorecard
+from app.schemas import AuditIssue, AuditResult, ExtractedLine, ExtractedPage, RewriteSuggestion, Scorecard
 from app.services import analyzer
 from app.services.analyzer import analyze_page
 
@@ -125,4 +125,104 @@ def test_analyzer_normalizes_explanatory_scoring_context(monkeypatch) -> None:
     assert result.overall_score <= 100
 
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    get_settings.cache_clear()
+
+
+def test_analyzer_uses_low_reasoning_and_drops_ungrounded_output(monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_MODEL", "gpt-5.5")
+    monkeypatch.setenv("OPENAI_REASONING_EFFORT", "low")
+    get_settings.cache_clear()
+    call_kwargs = {}
+
+    parsed_result = AuditResult(
+        overall_score=99,
+        verdict="Invented verdict",
+        scoring_context="General brand copy",
+        contextual_modifiers=["Message Hierarchy"],
+        scores=Scorecard(
+            brand_fit=80,
+            audience_fit=80,
+            clarity=80,
+            human_sound=80,
+            specificity=70,
+            trust=75,
+            distinctiveness=70,
+        ),
+        ai_sludge_risk=20,
+        top_issues=[
+            AuditIssue(
+                issue_type="Too vague",
+                priority="High",
+                source="P",
+                line_id="L001",
+                original_copy="Useful page copy.",
+                explanation="Needs more detail.",
+                suggested_rewrite="Add the concrete task and result.",
+            ),
+            AuditIssue(
+                issue_type="Invented proof",
+                priority="High",
+                source="P",
+                line_id="L002",
+                original_copy="Trusted by 10,000 teams.",
+                explanation="This was not on the page.",
+                suggested_rewrite="Remove it.",
+            ),
+        ],
+        line_level_rewrites=[
+            RewriteSuggestion(
+                source="P",
+                line_id=None,
+                original="Useful page copy.",
+                rewrite="Show the task, reader, and result.",
+                reason="More specific.",
+            ),
+            RewriteSuggestion(
+                source="P",
+                line_id="L002",
+                original="Made-up source copy.",
+                rewrite="Still made up.",
+                reason="Not grounded.",
+            ),
+        ],
+        voice_summary=["Inferred voice only, not confirmed."],
+        recommended_next_action="Tighten the proof.",
+    )
+
+    class FakeResponse:
+        output_parsed = parsed_result
+
+    class FakeResponses:
+        def parse(self, **kwargs):
+            call_kwargs.update(kwargs)
+            return FakeResponse()
+
+    class FakeOpenAI:
+        def __init__(self, **_kwargs):
+            self.responses = FakeResponses()
+
+    monkeypatch.setattr(analyzer, "OpenAI", FakeOpenAI)
+    page = ExtractedPage(
+        url="https://example.com",
+        title="Example",
+        meta_description="A useful description",
+        headings=["Heading"],
+        ctas=["Run the audit"],
+        lines=[ExtractedLine(line_id="L001", source="P", text="Useful page copy.")],
+    )
+
+    result = analyze_page(page, None)
+
+    assert call_kwargs["reasoning"] == {"effort": "low"}
+    assert call_kwargs["model"] == "gpt-5.5"
+    assert result.verdict == "Strong, with clear revision targets"
+    assert [issue.original_copy for issue in result.top_issues] == ["Useful page copy."]
+    assert result.top_issues[0].line_id == "L001"
+    assert [rewrite.original for rewrite in result.line_level_rewrites] == ["Useful page copy."]
+    assert result.line_level_rewrites[0].line_id == "L001"
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
+    monkeypatch.delenv("OPENAI_REASONING_EFFORT", raising=False)
     get_settings.cache_clear()

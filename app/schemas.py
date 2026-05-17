@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
@@ -11,6 +13,8 @@ CORE_SCORE_KEYS = (
     "distinctiveness",
 )
 
+Priority = Literal["High", "Medium", "Low"]
+
 
 class ScanRequest(BaseModel):
     url: HttpUrl
@@ -18,6 +22,7 @@ class ScanRequest(BaseModel):
 
 
 class ExtractedLine(BaseModel):
+    line_id: str = ""
     source: str
     text: str
 
@@ -46,24 +51,26 @@ class Scorecard(BaseModel):
 
 
 class AuditIssue(BaseModel):
-    issue_type: str
-    priority: str
-    source: str
-    original_copy: str
-    explanation: str
-    suggested_rewrite: str
+    issue_type: str = Field(max_length=80)
+    priority: Priority
+    source: str = Field(max_length=80)
+    line_id: str | None = Field(default=None, max_length=16)
+    original_copy: str = Field(max_length=600)
+    explanation: str = Field(max_length=800)
+    suggested_rewrite: str = Field(max_length=800)
 
 
 class RewriteSuggestion(BaseModel):
-    source: str
-    original: str
-    rewrite: str
-    reason: str
+    source: str = Field(max_length=80)
+    line_id: str | None = Field(default=None, max_length=16)
+    original: str = Field(max_length=600)
+    rewrite: str = Field(max_length=800)
+    reason: str = Field(max_length=500)
 
 
 class AuditResult(BaseModel):
     overall_score: int = Field(ge=0, le=100)
-    verdict: str
+    verdict: str = Field(max_length=80)
     scoring_context: str
     contextual_modifiers: list[str] = Field(default_factory=list, max_length=4)
     scores: Scorecard
@@ -71,7 +78,7 @@ class AuditResult(BaseModel):
     top_issues: list[AuditIssue] = Field(default_factory=list, max_length=8)
     line_level_rewrites: list[RewriteSuggestion] = Field(default_factory=list, max_length=8)
     voice_summary: list[str] = Field(default_factory=list, max_length=6)
-    recommended_next_action: str
+    recommended_next_action: str = Field(max_length=900)
 
     @field_validator("verdict", "scoring_context", "recommended_next_action")
     @classmethod

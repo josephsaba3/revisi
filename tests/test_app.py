@@ -42,6 +42,7 @@ def test_save_scan_persists_page_result(db_session) -> None:
                 issue_type="Too vague",
                 priority="High",
                 source="P",
+                line_id="L001",
                 original_copy="Useful page copy.",
                 explanation="Needs more detail.",
                 suggested_rewrite="Add the concrete task and result.",
@@ -50,6 +51,7 @@ def test_save_scan_persists_page_result(db_session) -> None:
         line_level_rewrites=[
             RewriteSuggestion(
                 source="P",
+                line_id="L001",
                 original="Useful page copy.",
                 rewrite="Show the task, reader, and result.",
                 reason="More specific.",
@@ -65,6 +67,8 @@ def test_save_scan_persists_page_result(db_session) -> None:
     assert scan.brand_voice_source == "inferred voice, not confirmed"
     assert scan.page_result.overall_score == 78
     assert scan.page_result.issues[0].issue_type == "Too vague"
+    assert scan.page_result.issues[0].line_id == "L001"
+    assert scan.page_result.rewrites[0].line_id == "L001"
 
 
 def test_save_scan_accepts_long_report_text(db_session) -> None:
@@ -146,7 +150,7 @@ def test_result_page_renders(db_session) -> None:
         app.dependency_overrides.clear()
 
     assert response.status_code == 200
-    assert "The Revisi Report" in response.text
+    assert "Revisi Brand Audit Report" in response.text
     assert "Lower-confidence result" in response.text
     assert "Plain and direct" in response.text
 

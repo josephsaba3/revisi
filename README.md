@@ -9,12 +9,16 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 $env:OPENAI_API_KEY="your-key"
+$env:OPENAI_MODEL="gpt-5.5"
+$env:OPENAI_REASONING_EFFORT="low"
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Open `http://127.0.0.1:8000`.
 
 If `DATABASE_URL` is not set, the app uses `sqlite:///./brand_voice_auditor.db`. Use a Postgres URL for production-like storage.
+
+Copy `.env.example` to `.env` for a local file-based setup. On the VPS, set `OPENAI_REASONING_EFFORT=low` in the service environment to keep GPT-5.5 audits cheaper and faster by default.
 
 ## Test
 
