@@ -1,14 +1,14 @@
 import json
 import logging
 
-from openai import OpenAI, OpenAIError
+from openai import OpenAI, OpenAIError, RateLimitError
 
 from app.config import get_settings
 from app.schemas import AuditIssue, AuditResult, ExtractedPage, RewriteSuggestion, Scorecard
 
 from .phrase_flags import estimate_ai_sludge_risk, find_phrase_flags
 from .scoring import calculate_overall_score, verdict_for_score
-from .spec_loader import load_rewrite_rules, load_scoring_guide
+from .spec_loader import SCORING_CONTEXT_WEIGHTS, load_rewrite_rules, load_scoring_guide
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +36,13 @@ def analyze_page(page: ExtractedPage, brand_voice: str | None) -> AuditResult:
                 {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
             ],
             text_format=AuditResult,
+        )
+    except RateLimitError:
+        logger.warning("OpenAI quota or rate limit hit; returning local draft result")
+        return _local_draft_result(
+            page,
+            brand_voice,
+            note="OpenAI quota or rate limit was hit, so this result uses the local draft checker.",
         )
     except OpenAIError:
         logger.exception("OpenAI audit request failed; returning local draft result")
@@ -86,8 +93,38 @@ def _analysis_payload(page: ExtractedPage, brand_voice: str | None) -> dict:
 
 
 def _normalize_result(result: AuditResult) -> AuditResult:
-    overall = calculate_overall_score(result.scores, result.scoring_context, result.ai_sludge_risk)
-    return result.model_copy(update={"overall_score": overall, "verdict": verdict_for_score(overall)})
+    scoring_context = _normalize_scoring_context(result.scoring_context)
+    overall = calculate_overall_score(result.scores, scoring_context, result.ai_sludge_risk)
+    return result.model_copy(
+        update={
+            "overall_score": overall,
+            "verdict": verdict_for_score(overall),
+            "scoring_context": scoring_context,
+        }
+    )
+
+
+def _normalize_scoring_context(raw_context: str) -> str:
+    context = (raw_context or "").strip()
+    if context in SCORING_CONTEXT_WEIGHTS:
+        return context
+
+    lowered = context.lower()
+    for candidate in SCORING_CONTEXT_WEIGHTS:
+        if candidate.lower() in lowered:
+            return candidate
+
+    if "saas" in lowered or "software" in lowered or "platform" in lowered or "product-led" in lowered:
+        return "SaaS feature page"
+    if "dental" in lowered or "healthcare" in lowered or "medical" in lowered:
+        return "Dental / healthcare page"
+    if "founder" in lowered or "homepage" in lowered:
+        return "Founder-led homepage"
+    if "blog" in lowered or "educational" in lowered or "article" in lowered:
+        return "Blog / educational content"
+
+    logger.warning("Unknown scoring context from analyzer: %s", context[:240])
+    return "General brand copy"
 
 
 def _local_draft_result(page: ExtractedPage, brand_voice: str | None, note: str | None = None) -> AuditResult:

@@ -45,6 +45,14 @@
     </div>
   </div>
 
+  {% if fallback_notice %}
+    <section class="fallback-callout">
+      <div class="pre">Lower-confidence result</div>
+      <div class="h">OpenAI analysis was unavailable.</div>
+      <p>{{ fallback_notice }}</p>
+    </section>
+  {% endif %}
+
   <section class="verdict">
     <div class="verdict-text">
       <div class="eyebrow">The verdict</div>

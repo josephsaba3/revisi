@@ -1,6 +1,7 @@
 from collections.abc import Generator
 
 from sqlalchemy import create_engine
+from sqlalchemy import text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from .config import get_settings
@@ -31,6 +32,20 @@ def init_db() -> None:
     from . import models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    _ensure_existing_schema()
+
+
+def _ensure_existing_schema() -> None:
+    if engine.dialect.name != "postgresql":
+        return
+
+    statements = [
+        "ALTER TABLE page_results ALTER COLUMN verdict TYPE TEXT",
+        "ALTER TABLE page_results ALTER COLUMN scoring_context TYPE TEXT",
+    ]
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
 
 
 def get_db() -> Generator[Session, None, None]:

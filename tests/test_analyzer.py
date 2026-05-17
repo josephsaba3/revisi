@@ -1,9 +1,15 @@
-from app.schemas import AuditResult, ExtractedLine, ExtractedPage
+import httpx
+from openai import RateLimitError
+
+from app.config import get_settings
+from app.schemas import AuditResult, ExtractedLine, ExtractedPage, Scorecard
+from app.services import analyzer
 from app.services.analyzer import analyze_page
 
 
 def test_local_analyzer_returns_valid_audit_without_key(monkeypatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    get_settings.cache_clear()
 
     page = ExtractedPage(
         url="https://example.com",
@@ -23,3 +29,100 @@ def test_local_analyzer_returns_valid_audit_without_key(monkeypatch) -> None:
     assert result.overall_score <= 100
     assert result.voice_summary[0] == "inferred voice, not confirmed"
     assert result.top_issues
+
+
+def test_analyzer_labels_openai_quota_fallback(monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    get_settings.cache_clear()
+
+    class FakeResponses:
+        def parse(self, **_kwargs):
+            request = httpx.Request("POST", "https://api.openai.com/v1/responses")
+            response = httpx.Response(429, request=request)
+            raise RateLimitError("quota exceeded", response=response, body={"error": {"message": "quota"}})
+
+    class FakeOpenAI:
+        def __init__(self, **_kwargs):
+            self.responses = FakeResponses()
+
+    monkeypatch.setattr(analyzer, "OpenAI", FakeOpenAI)
+    page = ExtractedPage(
+        url="https://example.com",
+        title="Example",
+        meta_description=None,
+        headings=["Example"],
+        ctas=[],
+        lines=[
+            ExtractedLine(source="H1", text="Unlock seamless growth for modern teams"),
+            ExtractedLine(source="P", text="Our all-in-one solution helps modern teams streamline operations."),
+        ],
+    )
+
+    result = analyze_page(page, None)
+
+    assert isinstance(result, AuditResult)
+    assert result.voice_summary[0] == "OpenAI quota or rate limit was hit, so this result uses the local draft checker."
+    assert result.top_issues
+    assert result.overall_score <= 100
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    get_settings.cache_clear()
+
+
+def test_analyzer_normalizes_explanatory_scoring_context(monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    get_settings.cache_clear()
+
+    parsed_result = AuditResult(
+        overall_score=78,
+        verdict="Strong, with clear revision targets",
+        scoring_context=(
+            "SaaS feature page. Although this is a homepage, it functions as a "
+            "product-led platform page for a complex payments offer."
+        ),
+        contextual_modifiers=["Message Hierarchy"],
+        scores=Scorecard(
+            brand_fit=88,
+            audience_fit=80,
+            clarity=82,
+            human_sound=77,
+            specificity=78,
+            trust=83,
+            distinctiveness=72,
+        ),
+        ai_sludge_risk=28,
+        top_issues=[],
+        line_level_rewrites=[],
+        voice_summary=["Inferred voice only, not confirmed."],
+        recommended_next_action="Tighten the hero and product-section intro first.",
+    )
+
+    class FakeResponse:
+        output_parsed = parsed_result
+
+    class FakeResponses:
+        def parse(self, **_kwargs):
+            return FakeResponse()
+
+    class FakeOpenAI:
+        def __init__(self, **_kwargs):
+            self.responses = FakeResponses()
+
+    monkeypatch.setattr(analyzer, "OpenAI", FakeOpenAI)
+    page = ExtractedPage(
+        url="https://stripe.com",
+        title="Stripe",
+        meta_description="Payments infrastructure",
+        headings=["Financial infrastructure"],
+        ctas=["Start now"],
+        lines=[ExtractedLine(source="H1", text="Financial infrastructure to grow your revenue")],
+    )
+
+    result = analyze_page(page, None)
+
+    assert result.scoring_context == "SaaS feature page"
+    assert result.verdict
+    assert result.overall_score <= 100
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    get_settings.cache_clear()

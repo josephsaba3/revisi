@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     openai_model: str = "gpt-5.1-mini"
     request_timeout_seconds: float = 15.0
+    scan_rate_limit_count: int = 5
+    scan_rate_limit_window_seconds: int = 600
+    scan_rate_limit_enabled: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

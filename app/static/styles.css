@@ -864,6 +864,39 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.fallback-callout {
+  display: grid;
+  gap: 8px;
+  margin-top: 28px;
+  border: 1px solid rgb(148 66 38 / 42%);
+  border-radius: var(--r-lg);
+  background: rgb(148 66 38 / 6%);
+  padding: 18px 20px;
+}
+
+.fallback-callout .pre {
+  color: var(--rust);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.fallback-callout .h {
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.fallback-callout p {
+  max-width: 72ch;
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .verdict {
   display: grid;
   grid-template-columns: 1fr 540px;

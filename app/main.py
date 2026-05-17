@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 import logging
+import time
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse
@@ -8,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from . import models
+from .config import get_settings
 from .database import get_db, init_db
 from .schemas import AuditResult
 from .services.analyzer import analyze_page
@@ -16,6 +18,7 @@ from .services.phrase_flags import find_phrase_flags
 
 
 logger = logging.getLogger(__name__)
+_scan_attempts: dict[str, list[float]] = {}
 
 
 @asynccontextmanager
@@ -42,6 +45,18 @@ async def scan(
     brand_voice_file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
+    if _scan_rate_limited(request):
+        return templates.TemplateResponse(
+            request,
+            "index.html",
+            {
+                "error": "Too many scans from this connection. Try again soon.",
+                "url": url,
+                "brand_voice": brand_voice,
+            },
+            status_code=429,
+        )
+
     try:
         normalized_url = normalize_url(url)
         uploaded_voice = await _read_brand_voice_file(brand_voice_file)
@@ -87,6 +102,42 @@ def result(request: Request, public_token: str, db: Session = Depends(get_db)) -
         "result.html",
         _result_template_context(scan_model),
     )
+
+
+def _client_rate_limit_key(request: Request) -> str:
+    cf_ip = request.headers.get("CF-Connecting-IP")
+    if cf_ip:
+        return cf_ip.strip()
+
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        return forwarded_for.split(",", 1)[0].strip()
+
+    if request.client and request.client.host:
+        return request.client.host
+
+    return "unknown"
+
+
+def _scan_rate_limited(request: Request) -> bool:
+    settings = get_settings()
+    if not settings.scan_rate_limit_enabled:
+        return False
+
+    now = time.monotonic()
+    window = settings.scan_rate_limit_window_seconds
+    limit = settings.scan_rate_limit_count
+    key = _client_rate_limit_key(request)
+    cutoff = now - window
+
+    attempts = [stamp for stamp in _scan_attempts.get(key, []) if stamp > cutoff]
+    if len(attempts) >= limit:
+        _scan_attempts[key] = attempts
+        return True
+
+    attempts.append(now)
+    _scan_attempts[key] = attempts
+    return False
 
 
 async def _read_brand_voice_file(file: UploadFile | None) -> str:
@@ -207,6 +258,10 @@ def _result_template_context(scan_model: models.Scan) -> dict:
     ]
     word_count = len(extracted_text.split())
     sentence_count = extracted_text.count(".") + extracted_text.count("?") + extracted_text.count("!")
+    fallback_notice = next(
+        (note for note in (page.voice_summary or []) if "OpenAI" in note and "local draft checker" in note),
+        None,
+    )
     return {
         "scan": scan_model,
         "page": page,
@@ -216,4 +271,5 @@ def _result_template_context(scan_model: models.Scan) -> dict:
         "metric_rows": metric_rows,
         "word_count": word_count,
         "sentence_count": sentence_count,
+        "fallback_notice": fallback_notice,
     }
