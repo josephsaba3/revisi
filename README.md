@@ -1,7 +1,7 @@
 # Brand Voice Auditor SaaS MVP
 
 FastAPI/Jinja MVP for scanning one URL, extracting visible copy, scoring brand voice and clarity, and returning page-level issues with line-level rewrites.
-
+ 
 ## Run Locally
 
 ```powershell
