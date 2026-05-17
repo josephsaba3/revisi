@@ -5,20 +5,27 @@
 
 {% block content %}
 <form id="scan-form" class="page" action="/scan-sync" method="post" enctype="multipart/form-data">
-  <header class="topbar">
+  <header class="topbar" data-mobile-menu>
+    <button class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="primary-menu" data-mobile-menu-toggle>
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
     <a class="wordmark" href="/" aria-label="Revisi by SplitPea">
       <span class="name">revisi</span>
       <span class="by"><span class="pea-dot"></span>by SplitPea</span>
     </a>
-    <nav class="topnav" aria-label="Primary navigation">
-      <a href="/" class="active">New audit</a>
-      <a href="#" aria-disabled="true">Library</a>
-      <a href="#" aria-disabled="true">Guidelines</a>
-      <a href="#" aria-disabled="true">Account</a>
-    </nav>
-    <div class="topbar-cta">
-      <button class="btn btn-outline" type="button">Sign in</button>
-      <button class="btn btn-green" type="button">14 credits</button>
+    <div class="mobile-menu" id="primary-menu" data-mobile-menu-panel>
+      <nav class="topnav" aria-label="Primary navigation">
+        <a href="/" class="active">New audit</a>
+        <a href="#" aria-disabled="true">Library</a>
+        <a href="#" aria-disabled="true">Guidelines</a>
+        <a href="#" aria-disabled="true">Account</a>
+      </nav>
+      <div class="topbar-cta">
+        <button class="btn btn-outline" type="button">Sign in</button>
+        <button class="btn btn-green" type="button">14 credits</button>
+      </div>
     </div>
   </header>
 

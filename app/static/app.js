@@ -1,4 +1,16 @@
 (() => {
+  document.querySelectorAll("[data-mobile-menu]").forEach((menu) => {
+    const toggle = menu.querySelector("[data-mobile-menu-toggle]");
+    const panel = menu.querySelector("[data-mobile-menu-panel]");
+    if (!toggle || !panel) return;
+
+    toggle.addEventListener("click", () => {
+      const isOpen = menu.classList.toggle("is-menu-open");
+      toggle.setAttribute("aria-expanded", String(isOpen));
+      toggle.setAttribute("aria-label", isOpen ? "Close menu" : "Open menu");
+    });
+  });
+
   document.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-copy]");
     if (!button) return;

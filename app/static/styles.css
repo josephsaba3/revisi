@@ -151,6 +151,49 @@ button:disabled {
   gap: 12px;
 }
 
+.mobile-menu {
+  display: contents;
+}
+
+.mobile-menu-toggle {
+  width: 42px;
+  height: 42px;
+  display: none;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px solid var(--parchment);
+  border-radius: var(--r-pill);
+  background: var(--warm-cream);
+  color: var(--garden-ink);
+}
+
+.mobile-menu-toggle:hover {
+  background: var(--soft-cream);
+}
+
+.mobile-menu-toggle span {
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transition: transform 0.18s, opacity 0.18s;
+}
+
+.topbar.is-menu-open .mobile-menu-toggle span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.topbar.is-menu-open .mobile-menu-toggle span:nth-child(2) {
+  opacity: 0;
+}
+
+.topbar.is-menu-open .mobile-menu-toggle span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
 .topnav {
   display: flex;
   gap: 4px;
@@ -1681,11 +1724,6 @@ button:disabled {
 }
 
 @media (max-width: 1080px) {
-  .topbar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .hero,
   .submission,
   .verdict,
@@ -1745,13 +1783,96 @@ button:disabled {
     width: min(100% - 32px, 1280px);
   }
 
+  .topbar {
+    position: relative;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 18px 0 14px;
+  }
+
+  .mobile-menu-toggle {
+    display: inline-flex;
+    order: 0;
+  }
+
+  .wordmark {
+    order: 1;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .wordmark .name {
+    font-size: 34px;
+  }
+
+  .wordmark .pod {
+    display: none;
+  }
+
+  .mobile-menu {
+    order: 3;
+    width: 100%;
+    display: none;
+    flex-basis: 100%;
+    border-top: 1px solid var(--parchment);
+    padding-top: 14px;
+  }
+
+  .topbar.is-menu-open .mobile-menu {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
   .topnav,
   .topbar-cta,
+  .topbar-right,
   .footer,
   .footer .left,
   .verdict-meta {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .topnav {
+    width: 100%;
+    gap: 6px;
+  }
+
+  .topnav a,
+  .topnav button {
+    width: 100%;
+    text-align: left;
+  }
+
+  .topbar-cta,
+  .topbar-right {
+    width: 100%;
+  }
+
+  .masthead {
+    gap: 12px;
+    padding: 24px 0 28px;
+  }
+
+  .masthead .center {
+    order: 1;
+    text-align: left;
+  }
+
+  .masthead .center small {
+    margin-bottom: 8px;
+  }
+
+  .masthead .left {
+    order: 2;
+  }
+
+  .masthead .right {
+    order: 3;
   }
 
   .hero h1 {

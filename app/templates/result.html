@@ -5,7 +5,12 @@
 
 {% block content %}
 <div class="page report-page">
-  <header class="topbar">
+  <header class="topbar" data-mobile-menu>
+    <button class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="report-menu" data-mobile-menu-toggle>
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
     <a class="wordmark" href="/">
       <span class="pod" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
@@ -18,13 +23,15 @@
       <span class="name">revisi</span>
       <span class="by">by SplitPea</span>
     </a>
-    <div class="topbar-right">
-      <nav class="topnav" aria-label="Report navigation">
-        <a href="/"><span class="dot"></span>New audit</a>
-        <a href="{{ page.url }}" target="_blank" rel="noreferrer">Source page</a>
-        <button type="button" data-share-report>Share</button>
-        <button type="button" data-export-pdf>Export PDF</button>
-      </nav>
+    <div class="mobile-menu" id="report-menu" data-mobile-menu-panel>
+      <div class="topbar-right">
+        <nav class="topnav" aria-label="Report navigation">
+          <a href="/"><span class="dot"></span>New audit</a>
+          <a href="{{ page.url }}" target="_blank" rel="noreferrer">Source page</a>
+          <button type="button" data-share-report>Share</button>
+          <button type="button" data-export-pdf>Export PDF</button>
+        </nav>
+      </div>
     </div>
   </header>
 
