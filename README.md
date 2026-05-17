@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Brand Voice Auditor SaaS MVP
 
 FastAPI/Jinja MVP for scanning one URL, extracting visible copy, scoring brand voice and clarity, and returning page-level issues with line-level rewrites.
@@ -22,18 +21,3 @@ If `DATABASE_URL` is not set, the app uses `sqlite:///./brand_voice_auditor.db`.
 ```powershell
 python -m pytest
 ```
-=======
-Skill that audits your website's content against your brand's voice (inferred or by using design.md/product.md/brand-voice.md document) and ranks it based on several metrics:
-
-- Brand Fit
-- Audience Fit
-- Clarity
-- Human Sound
-- Specificity
-- Trust
-- Distinctiveness
-
-Includes contextual awareness, so that a Dentist is weighted more heavily on 'Trust' than a SaaS.
-
-Install by pointing your agent to the repo: https://github.com/josephsaba3/brand-voice-auditor/
->>>>>>> 8c52283b736ef74163513f9af14619234bfe23cb
