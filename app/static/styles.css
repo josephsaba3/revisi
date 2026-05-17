@@ -783,6 +783,12 @@ button:disabled {
   transform: none;
 }
 
+.loader-card .log .row.done,
+.loader-card .log .row.error {
+  opacity: 1;
+  transform: none;
+}
+
 .loader-card .log .row .num {
   color: var(--pea);
   font-weight: 500;
@@ -794,6 +800,10 @@ button:disabled {
 
 .loader-card .log .row.done .num::after {
   content: " ok";
+}
+
+.loader-card .log .row.error .num {
+  color: var(--rust);
 }
 
 .loader-card .log .row .t {
@@ -814,6 +824,26 @@ button:disabled {
   border-radius: 999px;
   background: var(--pea);
   transition: width 0.4s ease-out;
+}
+
+.loader-error {
+  margin-top: 24px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 8px;
+  background: rgb(148 66 38 / 18%);
+  padding: 16px;
+}
+
+.loader-error p {
+  margin: 0 0 14px;
+  color: var(--warm-cream);
+  font-size: 14px;
+}
+
+.loader-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .masthead {

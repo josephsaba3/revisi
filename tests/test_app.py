@@ -1,5 +1,6 @@
 from app.config import get_settings
-from app.main import _save_scan, _scan_attempts
+from app import main
+from app.main import _complete_job, _create_scan_job, _perform_scan, _save_scan, _scan_attempts, _scan_jobs
 from app.schemas import AuditIssue, AuditResult, ExtractedLine, ExtractedPage, RewriteSuggestion, Scorecard
 from fastapi.testclient import TestClient
 from app.main import app, get_db
@@ -167,15 +168,94 @@ def test_scan_rate_limit_blocks_repeated_posts(monkeypatch) -> None:
     try:
         for _ in range(5):
             response = client.post("/scan", data={"url": "ftp://example.com", "brand_voice": ""}, headers=headers)
-            assert response.status_code == 400
+            assert response.status_code == 202
 
         limited = client.post("/scan", data={"url": "ftp://example.com", "brand_voice": ""}, headers=headers)
 
         assert limited.status_code == 429
-        assert "Too many scans from this connection. Try again soon." in limited.text
+        assert limited.json()["error"] == "Too many scans from this connection. Try again soon."
     finally:
         _scan_attempts.clear()
+        _scan_jobs.clear()
         monkeypatch.delenv("SCAN_RATE_LIMIT_ENABLED", raising=False)
         monkeypatch.delenv("SCAN_RATE_LIMIT_COUNT", raising=False)
         monkeypatch.delenv("SCAN_RATE_LIMIT_WINDOW_SECONDS", raising=False)
         get_settings.cache_clear()
+
+
+def test_scan_post_returns_job_id(monkeypatch) -> None:
+    async def fake_run_scan_job(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(main, "_run_scan_job", fake_run_scan_job)
+    _scan_attempts.clear()
+    _scan_jobs.clear()
+    client = TestClient(app)
+
+    try:
+        response = client.post("/scan", data={"url": "example.com", "brand_voice": ""})
+
+        assert response.status_code == 202
+        assert response.json()["job_id"] in _scan_jobs
+    finally:
+        _scan_attempts.clear()
+        _scan_jobs.clear()
+
+
+def test_scan_progress_returns_done_report_url() -> None:
+    _scan_jobs.clear()
+    job_id = _create_scan_job()
+    _complete_job(job_id, "/r/test-token")
+    client = TestClient(app)
+
+    try:
+        response = client.get(f"/scan/progress/{job_id}")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["status"] == "done"
+        assert payload["report_url"] == "/r/test-token"
+    finally:
+        _scan_jobs.clear()
+
+
+def test_perform_scan_updates_real_progress(monkeypatch, db_session) -> None:
+    async def fake_fetch_html(_url: str) -> str:
+        return "<main><h1>Useful page copy.</h1><a>Run the audit</a></main>"
+
+    def fake_analyze_page(page, _brand_voice):
+        return AuditResult(
+            overall_score=78,
+            verdict="Strong, with clear revision targets",
+            scoring_context="General brand copy",
+            contextual_modifiers=["Message Hierarchy"],
+            scores=Scorecard(
+                brand_fit=80,
+                audience_fit=80,
+                clarity=80,
+                human_sound=80,
+                specificity=70,
+                trust=75,
+                distinctiveness=70,
+            ),
+            ai_sludge_risk=20,
+            top_issues=[],
+            line_level_rewrites=[],
+            voice_summary=["Plain and direct"],
+            recommended_next_action="Tighten the proof.",
+        )
+
+    monkeypatch.setattr(main, "fetch_html", fake_fetch_html)
+    monkeypatch.setattr(main, "analyze_page", fake_analyze_page)
+    _scan_jobs.clear()
+    job_id = _create_scan_job()
+
+    try:
+        scan = main.asyncio.run(_perform_scan("example.com", "", "", db_session, job_id))
+        payload = main._job_snapshot(_scan_jobs[job_id])
+
+        assert scan.public_token
+        assert payload["completed_steps"] == len(payload["steps"])
+        assert all(step["status"] == "done" for step in payload["steps"])
+    finally:
+        _scan_jobs.clear()

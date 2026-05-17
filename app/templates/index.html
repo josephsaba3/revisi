@@ -4,7 +4,7 @@
 {% block main_class %}app-root{% endblock %}
 
 {% block content %}
-<form id="scan-form" class="page" action="/scan" method="post" enctype="multipart/form-data">
+<form id="scan-form" class="page" action="/scan-sync" method="post" enctype="multipart/form-data">
   <header class="topbar">
     <a class="wordmark" href="/" aria-label="Revisi by SplitPea">
       <span class="name">revisi</span>
@@ -168,14 +168,16 @@
     <div class="pre">Reading</div>
     <h2>Hang on. Reading the site.</h2>
     <div class="log" id="log">
-      <div class="row"><span class="num"></span><span>Fetching pages, stripping chrome</span><span class="t">00:01</span></div>
-      <div class="row"><span class="num"></span><span>Parsing design guide for voice rules</span><span class="t">00:04</span></div>
-      <div class="row"><span class="num"></span><span>Sampling sentences for readability</span><span class="t">00:09</span></div>
-      <div class="row"><span class="num"></span><span>Cross-referencing AI tell-words</span><span class="t">00:14</span></div>
-      <div class="row"><span class="num"></span><span>Scoring consistency against the guide</span><span class="t">00:21</span></div>
-      <div class="row"><span class="num"></span><span>Writing the editor notes</span><span class="t">00:27</span></div>
+      <div class="row"><span class="num">wait</span><span>Waiting for the scan job</span><span class="t">--:--</span></div>
     </div>
     <div class="progress"><div class="bar" id="progress-bar"></div></div>
+    <div class="loader-error" id="loader-error" hidden>
+      <p id="loader-error-text"></p>
+      <div class="loader-actions">
+        <button class="btn btn-green" type="button" id="loader-retry">Try again</button>
+        <button class="btn btn-outline" type="button" id="loader-back">Back to form</button>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

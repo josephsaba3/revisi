@@ -31,8 +31,12 @@
   const depthInput = document.getElementById("depth-input");
   const submitBtn = document.getElementById("submit-btn");
   const loader = document.getElementById("loader");
-  const logRows = document.querySelectorAll("#log .row");
+  const log = document.getElementById("log");
   const progressBar = document.getElementById("progress-bar");
+  const loaderError = document.getElementById("loader-error");
+  const loaderErrorText = document.getElementById("loader-error-text");
+  const loaderRetry = document.getElementById("loader-retry");
+  const loaderBack = document.getElementById("loader-back");
 
   if (!form || !urlInput) return;
 
@@ -186,36 +190,109 @@
     });
   });
 
-  form.addEventListener("submit", () => {
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
     if (submitBtn) submitBtn.disabled = true;
     if (!loader) return;
     loader.classList.add("on");
     loader.setAttribute("aria-hidden", "false");
-    runLoaderSequence();
+    clearLoaderError();
+    renderProgress({
+      status: "queued",
+      completed_steps: 0,
+      steps: [{ label: "Starting the scan", status: "running", elapsed_seconds: null }],
+    });
+
+    try {
+      const response = await fetch("/scan", {
+        method: "POST",
+        body: new FormData(form),
+        headers: { Accept: "application/json" },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "The scan could not be started.");
+      }
+      if (!data.job_id) {
+        throw new Error("The scan did not return a job id.");
+      }
+      pollProgress(data.job_id);
+    } catch (error) {
+      showLoaderError(error.message || "The scan failed before it could start.");
+    }
   });
 
-  function runLoaderSequence() {
-    const total = logRows.length;
-    let index = 0;
-
-    const tick = () => {
-      if (index > 0) logRows[index - 1].classList.add("done");
-      if (index < total) {
-        logRows[index].classList.add("on");
-        logRows[index].querySelector(".num").textContent = "now";
-        for (let row = 0; row < index; row += 1) {
-          logRows[row].querySelector(".num").textContent = "done";
-        }
-        if (progressBar) progressBar.style.width = `${(index / total) * 100}%`;
-        index += 1;
-        window.setTimeout(tick, 480);
-      } else if (progressBar) {
-        progressBar.style.width = "100%";
+  async function pollProgress(jobId) {
+    try {
+      const response = await fetch(`/scan/progress/${encodeURIComponent(jobId)}`, {
+        headers: { Accept: "application/json" },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Could not read scan progress.");
       }
-    };
+      renderProgress(data);
 
-    tick();
+      if (data.status === "done" && data.report_url) {
+        window.location.assign(data.report_url);
+        return;
+      }
+      if (data.status === "error") {
+        showLoaderError(data.error || "The scan failed.");
+        return;
+      }
+      window.setTimeout(() => pollProgress(jobId), 700);
+    } catch (error) {
+      showLoaderError(error.message || "Could not read scan progress.");
+    }
   }
+
+  function renderProgress(data) {
+    const steps = data.steps || [];
+    if (log) {
+      log.innerHTML = steps.map((step) => {
+        const status = step.status || "pending";
+        const label = step.label || "Working";
+        const elapsed = formatElapsed(step.elapsed_seconds);
+        const rowClass = status === "done" ? "row done" : status === "running" ? "row on" : status === "error" ? "row error" : "row";
+        const marker = status === "done" ? "done" : status === "running" ? "now" : status === "error" ? "stop" : "wait";
+        const suffix = step.key === "openai" && status === "running" ? " This is usually the longest step." : "";
+        return `<div class="${rowClass}"><span class="num">${marker}</span><span>${escapeHtml(label + suffix)}</span><span class="t">${elapsed}</span></div>`;
+      }).join("");
+    }
+
+    if (progressBar) {
+      const total = Math.max(steps.length, 1);
+      const completed = data.completed_steps || steps.filter((step) => step.status === "done").length;
+      progressBar.style.width = `${Math.min(100, Math.round((completed / total) * 100))}%`;
+    }
+  }
+
+  function formatElapsed(seconds) {
+    if (seconds === null || seconds === undefined) return "--:--";
+    const safeSeconds = Math.max(0, Math.round(seconds));
+    const minutes = String(Math.floor(safeSeconds / 60)).padStart(2, "0");
+    const remainder = String(safeSeconds % 60).padStart(2, "0");
+    return `${minutes}:${remainder}`;
+  }
+
+  function showLoaderError(message) {
+    if (submitBtn) submitBtn.disabled = false;
+    if (loaderErrorText) loaderErrorText.textContent = message;
+    if (loaderError) loaderError.hidden = false;
+  }
+
+  function clearLoaderError() {
+    if (loaderError) loaderError.hidden = true;
+    if (loaderErrorText) loaderErrorText.textContent = "";
+  }
+
+  loaderRetry?.addEventListener("click", () => form.requestSubmit());
+  loaderBack?.addEventListener("click", () => {
+    loader?.classList.remove("on");
+    loader?.setAttribute("aria-hidden", "true");
+    if (submitBtn) submitBtn.disabled = validateUrl(state.url) !== true;
+  });
 
   if (state.url) urlInput.value = state.url;
   renderUrlState();
