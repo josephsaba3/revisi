@@ -40,8 +40,13 @@
 
     <section class="page-list">
       <div class="page-list-head">
-        <h2>Pages</h2>
-        <span>1</span>
+        <div>
+          <h2>Pages</h2>
+          <span>1</span>
+        </div>
+        <button class="pages-toggle" type="button" aria-label="Collapse pages sidebar" aria-pressed="false" data-pages-toggle>
+          <span aria-hidden="true">‹</span>
+        </button>
       </div>
       <div class="page-tabs" aria-label="Page filters">
         <button class="is-active" type="button">Needs review <span>{{ flagged_count }}</span></button>
@@ -174,8 +179,13 @@
 
   <aside class="scorecard-panel" aria-label="Page-wide metrics">
     <div class="scorecard-head">
-      <h2>Voice scorecard</h2>
-      <p>Page-wide metrics for the selected page.</p>
+      <div>
+        <h2>Voice scorecard</h2>
+        <p>Page-wide metrics for the selected page.</p>
+      </div>
+      <button class="scorecard-toggle" type="button" aria-label="Collapse voice scorecard" aria-pressed="false" data-scorecard-toggle>
+        <span aria-hidden="true">›</span>
+      </button>
     </div>
     {% for metric in metric_rows %}
       <section class="scorecard-metric">

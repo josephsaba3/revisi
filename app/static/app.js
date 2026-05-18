@@ -82,6 +82,46 @@
     card.hidden = isOpen;
   });
 
+  document.querySelectorAll("[data-scorecard-toggle]").forEach((toggle) => {
+    const workspace = toggle.closest(".audit-workspace");
+    if (!workspace) return;
+
+    const saved = window.localStorage.getItem("revisi-scorecard-collapsed") === "true";
+
+    function setCollapsed(isCollapsed) {
+      workspace.classList.toggle("is-scorecard-collapsed", isCollapsed);
+      toggle.setAttribute("aria-pressed", String(isCollapsed));
+      toggle.setAttribute("aria-label", isCollapsed ? "Expand voice scorecard" : "Collapse voice scorecard");
+      window.localStorage.setItem("revisi-scorecard-collapsed", String(isCollapsed));
+    }
+
+    setCollapsed(saved);
+
+    toggle.addEventListener("click", () => {
+      setCollapsed(!workspace.classList.contains("is-scorecard-collapsed"));
+    });
+  });
+
+  document.querySelectorAll("[data-pages-toggle]").forEach((toggle) => {
+    const workspace = toggle.closest(".audit-workspace");
+    if (!workspace) return;
+
+    const saved = window.localStorage.getItem("revisi-pages-collapsed") === "true";
+
+    function setCollapsed(isCollapsed) {
+      workspace.classList.toggle("is-pages-collapsed", isCollapsed);
+      toggle.setAttribute("aria-pressed", String(isCollapsed));
+      toggle.setAttribute("aria-label", isCollapsed ? "Expand pages sidebar" : "Collapse pages sidebar");
+      window.localStorage.setItem("revisi-pages-collapsed", String(isCollapsed));
+    }
+
+    setCollapsed(saved);
+
+    toggle.addEventListener("click", () => {
+      setCollapsed(!workspace.classList.contains("is-pages-collapsed"));
+    });
+  });
+
   const form = document.getElementById("scan-form");
   const urlInput = document.getElementById("url-input");
   const urlBox = document.getElementById("url-box");
