@@ -2082,7 +2082,7 @@ button:disabled {
   border-left: 1px solid #cfcac0;
   background: transparent;
   color: #171611;
-  padding: 0 28px;
+  /* padding: 0 28px; */
   font-weight: 650;
 }
 
@@ -2472,7 +2472,7 @@ button:disabled {
 .flagged-copy {
   padding: 8px 0;
   background-image: linear-gradient(#ead0c2, #ead0c2);
-  background-size: 100% 58%;
+  background-size: 100% 75%;
   background-position: 0 62%;
   background-repeat: no-repeat;
   box-shadow: -2px 0 0 #be4722;
