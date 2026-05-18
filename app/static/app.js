@@ -63,6 +63,25 @@
     }
   });
 
+  document.addEventListener("click", (event) => {
+    const trigger = event.target.closest("[data-finding-trigger]");
+    if (!trigger) return;
+
+    const card = document.getElementById(trigger.dataset.findingTrigger || "");
+    if (!card) return;
+
+    const isOpen = trigger.getAttribute("aria-expanded") === "true";
+    document.querySelectorAll("[data-finding-trigger][aria-expanded='true']").forEach((openTrigger) => {
+      if (openTrigger === trigger) return;
+      openTrigger.setAttribute("aria-expanded", "false");
+      const openCard = document.getElementById(openTrigger.dataset.findingTrigger || "");
+      if (openCard) openCard.hidden = true;
+    });
+
+    trigger.setAttribute("aria-expanded", String(!isOpen));
+    card.hidden = isOpen;
+  });
+
   const form = document.getElementById("scan-form");
   const urlInput = document.getElementById("url-input");
   const urlBox = document.getElementById("url-box");

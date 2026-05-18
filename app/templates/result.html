@@ -1,281 +1,214 @@
 {% extends "base.html" %}
 
 {% block title %}Revisi - Audit Report{% endblock %}
-{% block main_class %}app-root{% endblock %}
+{% block main_class %}audit-shell{% endblock %}
 
 {% block content %}
-<div class="page report-page">
-  <header class="topbar" data-mobile-menu>
-    <button class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="report-menu" data-mobile-menu-toggle>
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
-    <a class="wordmark" href="/">
-      <span class="pod" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
-          <path d="M3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9c-2 0-3-1-4-2s-1-3-2-4-3-1-4-2-1-1-1-3z" fill="#4f6b25" stroke="#15140f" stroke-width="1.2" stroke-linejoin="round"></path>
-          <circle cx="9" cy="13" r="1.4" fill="#15140f"></circle>
-          <circle cx="13" cy="10" r="1.4" fill="#15140f"></circle>
-          <circle cx="16" cy="14" r="1.4" fill="#15140f"></circle>
-        </svg>
-      </span>
-      <span class="name">revisi</span>
-      <span class="by">by SplitPea</span>
+{% set page_issues = issues|list %}
+{% set flagged_count = page_issues|length %}
+{% set title = page.title or page.url %}
+{% set page_path = "/" + page.url.split("/", 3)[3] if "/" in page.url.replace("https://", "").replace("http://", "") else "/" %}
+{% set weak_metrics = metric_rows|selectattr("value", "lt", 75)|list %}
+
+<div class="audit-workspace">
+  <span class="sr-only">Revisi Brand Audit Report</span>
+  <header class="audit-topbar">
+    <a class="audit-brand" href="/" aria-label="Revisi home">
+      <span class="audit-mark" aria-hidden="true"></span>
+      <span>Revisi</span>
     </a>
-    <div class="mobile-menu" id="report-menu" data-mobile-menu-panel>
-      <div class="topbar-right">
-        <nav class="topnav" aria-label="Report navigation">
-          <a href="/"><span class="dot"></span>New audit</a>
-          <a href="{{ page.url }}" target="_blank" rel="noreferrer">Source page</a>
-          <button type="button" data-share-report>Share</button>
-          <button type="button" data-export-pdf>Export PDF</button>
-        </nav>
-      </div>
+    <div class="audit-status">
+      <span>Auditing</span>
+      <strong>{{ page.url.replace("https://", "").replace("http://", "").split("/")[0] }}</strong>
+      <span>Last scan {{ scan.created_at.strftime("%d %b %Y") if scan.created_at else "today" }}</span>
     </div>
+    <nav class="audit-actions" aria-label="Report actions">
+      <a href="/">+ New scan</a>
+      <a href="{{ page.url }}" target="_blank" rel="noreferrer">Source page</a>
+      <button type="button" data-export-pdf>Export PDF</button>
+    </nav>
   </header>
 
-  <div class="masthead">
-    <div class="center">
-      <small>{{ page.url }}</small>
-      <em>Revisi Brand Audit Report</em>
-    </div>
-    <div class="left">
-      <div><strong>Website:</strong> {{ page.url }}</div>
-      <div><strong>Design principles:</strong> {{ scan.brand_voice_source }}</div>
-    </div>
-    <div class="right">
-      <div><strong>Issued</strong> {{ scan.created_at.strftime("%d %b %Y") if scan.created_at else "Today" }}</div>
-      <div><strong>Scope:</strong> one page</div>
-    </div>
-  </div>
-
-  {% if fallback_notice %}
-    <section class="fallback-callout">
-      <div class="pre">Lower-confidence result</div>
-      <div class="h">OpenAI analysis was unavailable.</div>
-      <p>{{ fallback_notice }}</p>
+  <aside class="audit-pages" aria-label="Audited pages">
+    <section class="site-score">
+      <div>
+        <strong>{{ page.overall_score }}</strong>
+        <span>/ 100</span>
+      </div>
+      <p>Brand voice</p>
     </section>
-  {% endif %}
 
-  <section class="verdict">
-    <div class="verdict-text">
-      <div class="eyebrow">The verdict</div>
-      <h1>
-        A <span class="em">{{ page.verdict|lower }}</span>, with the revision targets now in view.
-      </h1>
-      <p class="lede">
-        {{ page.url }} was scored against the current brand-voice rubric. The read below uses live metrics, extracted page copy, flagged phrases, and rewrite recommendations.
-      </p>
-      <div class="verdict-meta">
-        <div class="pair"><div class="k">Words read</div><div class="v">{{ "{:,}".format(word_count) }}</div></div>
-        <div class="pair"><div class="k">Sentences</div><div class="v">{{ sentence_count }}</div></div>
-        <div class="pair"><div class="k">AI slop risk</div><div class="v">{{ page.ai_sludge_risk }}/100</div></div>
-        <div class="pair"><div class="k">Context</div><div class="v">{{ page.scoring_context }}</div></div>
+    <section class="page-list">
+      <div class="page-list-head">
+        <h2>Pages</h2>
+        <span>1</span>
       </div>
+      <div class="page-tabs" aria-label="Page filters">
+        <button class="is-active" type="button">Needs review <span>{{ flagged_count }}</span></button>
+        <button type="button">All</button>
+        <button type="button">On-brand</button>
+      </div>
+      <a class="page-row is-selected" href="#selected-page">
+        <span class="page-dot {% if page.overall_score < 60 %}bad{% elif page.overall_score < 75 %}warn{% endif %}"></span>
+        <span class="page-row-main">
+          <strong>{{ title|truncate(34, True) }}</strong>
+          <em>{{ page_path }}</em>
+        </span>
+        <span class="page-row-score">
+          <strong>{{ page.overall_score }}</strong>
+          <em>{{ flagged_count }} flag{% if flagged_count != 1 %}s{% endif %}</em>
+        </span>
+      </a>
+    </section>
+
+    <section class="reviewed-by">
+      <span>R</span>
+      <div>
+        <strong>Reviewed by Revisi</strong>
+        <em>{{ scan.brand_voice_source }}</em>
+      </div>
+    </section>
+  </aside>
+
+  <main class="audit-document" id="selected-page">
+    {% if fallback_notice %}
+      <section class="audit-callout">
+        <strong>Lower-confidence result.</strong>
+        <span>{{ fallback_notice }}</span>
+      </section>
+    {% endif %}
+
+    <section class="audit-summary">
+      <div>
+        <p>
+          Mostly {{ page.verdict|lower }}.
+          <strong>{{ flagged_count }} of {{ sentence_count }} sentence{% if sentence_count != 1 %}s{% endif %}</strong>
+          need attention.
+        </p>
+        {% if weak_metrics %}
+          <span>The weakest dimensions are
+            {% for metric in weak_metrics[:2] %}
+              <mark>{{ metric.label }}</mark>{% if not loop.last %} and {% endif %}
+            {% endfor %}
+            .
+          </span>
+        {% else %}
+          <span>The page is broadly aligned, with a few line-level edits worth reviewing.</span>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="document-head">
+      <div>
+        <small>{{ page.url.replace("https://", "").replace("http://", "") }}</small>
+        <h1>{{ title }}</h1>
+        <p>{{ page.scoring_context }}</p>
+      </div>
+      <div class="document-score">
+        <strong>{{ page.overall_score }}</strong><span>/100</span>
+        <em>Page score</em>
+      </div>
+    </section>
+
+    <article class="page-copy">
+      {% if page.extracted_copy %}
+        {% for line in page.extracted_copy[:36] %}
+          {% set line_issues = page_issues|selectattr("line_id", "equalto", line.line_id)|list %}
+          {% set line_rewrites = rewrites|selectattr("line_id", "equalto", line.line_id)|list %}
+          {% set has_issue = line_issues|length > 0 %}
+          <section class="copy-line{% if has_issue %} has-finding{% endif %}" id="line-{{ line.line_id }}">
+            <div class="line-marker">
+              {% if has_issue %}
+                <span>{{ "%02d"|format(loop.index) }}</span>
+              {% else %}
+                <span aria-hidden="true">✓</span>
+              {% endif %}
+            </div>
+            <div class="line-body">
+              {% if has_issue %}
+                <button class="flagged-copy" type="button" data-finding-trigger="finding-{{ line.line_id }}" aria-expanded="false" aria-controls="finding-{{ line.line_id }}">
+                  {{ line.text }}
+                </button>
+                <div class="finding-card" id="finding-{{ line.line_id }}" hidden>
+                  <div class="finding-index">{{ line.line_id }}</div>
+                  <div class="finding-main">
+                    <div class="finding-card-head">
+                      <h2>{{ line_issues[0].issue_type }}</h2>
+                      <span>{{ line_issues[0].priority }} priority</span>
+                    </div>
+                    <div class="finding-grid">
+                      <div>
+                        <h3>Why this stood out</h3>
+                        <p>{{ line_issues[0].explanation }}</p>
+                      </div>
+                      <div>
+                        <h3>How Revisi reads it</h3>
+                        <p>{{ line_issues[0].original_copy }}</p>
+                      </div>
+                    </div>
+                    <div class="rewrite-strip">
+                      <strong>Suggested rewrite</strong>
+                      <p>{{ line_rewrites[0].rewrite if line_rewrites else line_issues[0].suggested_rewrite }}</p>
+                    </div>
+                    <div class="finding-actions">
+                      <button type="button">Ignore</button>
+                      <button type="button" data-copy="{{ line_issues[0].original_copy }}">Copy original</button>
+                      <button class="primary" type="button" data-copy="{{ line_rewrites[0].rewrite if line_rewrites else line_issues[0].suggested_rewrite }}">Copy rewrite</button>
+                    </div>
+                  </div>
+                </div>
+              {% else %}
+                <p>{{ line.text }}</p>
+              {% endif %}
+            </div>
+          </section>
+        {% endfor %}
+      {% else %}
+        <section class="empty-copy">
+          <h2>No extracted page copy was saved for this scan.</h2>
+          <p>{{ page.recommended_next_action }}</p>
+        </section>
+      {% endif %}
+    </article>
+  </main>
+
+  <aside class="scorecard-panel" aria-label="Page-wide metrics">
+    <div class="scorecard-head">
+      <h2>Voice scorecard</h2>
+      <p>Page-wide metrics for the selected page.</p>
     </div>
-
-    <div class="score" style="--score: {{ page.overall_score }}%;">
-      <div class="score-head">
-        <div class="eyebrow">Composite score</div>
-        <div class="grade">grade {% if page.overall_score >= 90 %}A{% elif page.overall_score >= 80 %}B{% elif page.overall_score >= 70 %}C{% elif page.overall_score >= 60 %}D{% else %}F{% endif %}</div>
-      </div>
-      <div class="score-number">
-        <div class="big">{{ page.overall_score }}</div>
-        <div class="frac">/ 100</div>
-        <div class="delta">
-          <div class="arr">now</div>
-          <div class="lbl">current audit</div>
-        </div>
-      </div>
-      <div class="score-bar">
-        <div class="fill"></div>
-        <div class="ticks">{% for _ in range(11) %}<span></span>{% endfor %}</div>
-        <div class="marker"></div>
-      </div>
-      <div class="score-legend">
-        <span>0 - undraft</span>
-        <span>50</span>
-        <span class="now">{{ page.overall_score }} - {{ page.verdict }}</span>
-        <span>100 - masterwork</span>
-      </div>
-    </div>
-  </section>
-
-  <div class="sect-head">
-    <div class="num">02</div>
-    <h2>By the <em>numbers</em>, seven ways.</h2>
-    <div class="note">Core rubric metrics. AI slop risk is applied as a penalty after scoring.</div>
-  </div>
-
-  <section class="metrics">
     {% for metric in metric_rows %}
-      <article class="metric">
-        <div class="top">
-          <div class="label">{{ metric.label }}</div>
-          <div class="trend{% if metric.value < 70 %} down{% endif %}">{{ metric.value }}/100</div>
+      <section class="scorecard-metric">
+        <div class="metric-title">
+          <strong>{{ metric.label }}</strong>
+          <span>{% if metric.value >= 75 %}On-brand{% elif metric.value >= 60 %}Watch{% else %}Off-brand{% endif %}</span>
         </div>
-        <div class="v">{{ metric.value }}<small>/100</small></div>
-        <div class="gauge{% if metric.value < 60 %} poor{% elif metric.value < 75 %} mid{% endif %}">
-          <div class="fill" style="width: {{ metric.value }}%"></div>
+        <div class="metric-bar {% if metric.value < 60 %}bad{% elif metric.value < 75 %}warn{% endif %}">
+          <span style="width: {{ metric.value }}%"></span>
         </div>
-        <div class="desc">{{ metric.desc }}</div>
-        <div class="tags">
-          <span class="tag{% if metric.value >= 75 %} ok{% elif metric.value < 60 %} flag{% endif %}">{% if metric.value >= 75 %}aligned{% elif metric.value < 60 %}needs revision{% else %}watch{% endif %}</span>
-        </div>
-      </article>
+        <p>{{ metric.desc }}</p>
+      </section>
     {% endfor %}
-  </section>
-
-  <div class="sect-head">
-    <div class="num">03</div>
-    <h2>The <em>receipts</em>.</h2>
-    <div class="note">A representative sample of what Revisi flagged and what to preserve.</div>
-  </div>
-
-  <section class="evidence">
-    <div>
-      <div class="col-h">
-        What we would revise
-        <span class="pill">{{ issues|length }} findings</span>
-      </div>
-      {% if issues %}
-        {% for issue in issues %}
-          <article class="evi-item">
-            <div class="marker">{% if issue.priority|lower == "medium" %}!{% else %}x{% endif %}</div>
-            <div class="body">
-              <div class="meta">{{ issue.source }} - {{ issue.priority }}</div>
-              <div class="quote">{{ issue.original_copy }}</div>
-              <div class="why"><strong>{{ issue.issue_type }}.</strong> {{ issue.explanation }}</div>
-            </div>
-          </article>
+    {% if page.voice_summary %}
+      <section class="scorecard-notes">
+        <h2>What is working</h2>
+        {% for note in page.voice_summary %}
+          {% if note != fallback_notice %}
+            <p>{{ note }}</p>
+          {% endif %}
         {% endfor %}
-      {% else %}
-        <article class="evi-item">
-          <div class="marker ok">ok</div>
-          <div class="body">
-            <div class="meta">No high-priority findings</div>
-            <div class="quote ok">Nothing major was flagged in this scan.</div>
-            <div class="why">A deeper scan may still find page-pattern issues once multi-page audits are enabled.</div>
-          </div>
-        </article>
-      {% endif %}
-    </div>
+      </section>
+    {% endif %}
+  </aside>
 
+  <footer class="audit-bottom-bar">
+    <strong>{{ flagged_count }} finding{% if flagged_count != 1 %}s{% endif %}</strong>
+    <span>on this page · roughly {{ [flagged_count * 6, 6]|max }} min to fix</span>
     <div>
-      <div class="col-h">
-        What's working well
-        <span class="pill">{{ page.voice_summary|length }} notes</span>
-      </div>
-      {% for item in page.voice_summary %}
-        <article class="evi-item">
-          <div class="marker ok">ok</div>
-          <div class="body">
-            <div class="meta">Voice note</div>
-            <div class="quote ok">{{ item }}</div>
-          </div>
-        </article>
-      {% endfor %}
-      {% if page.scores.get("clarity", 0) >= 75 %}
-        <article class="evi-item">
-          <div class="marker ok">ok</div>
-          <div class="body">
-            <div class="meta">Clarity</div>
-            <div class="quote ok">The page is broadly understandable.</div>
-            <div class="why">The core offer is readable enough to refine rather than restart.</div>
-          </div>
-        </article>
-      {% endif %}
+      <button type="button" data-share-report>Share</button>
+      <button type="button" data-export-pdf>Export PDF</button>
+      <a href="/">Run another scan</a>
     </div>
-  </section>
-
-  <section class="slop">
-    <div>
-      <h3>The slop <em>watchlist</em>.</h3>
-      <p>Terms flagged by Revisi as AI-typical, generic, or low-information. Counts are occurrences in the extracted page copy.</p>
-    </div>
-    <div class="slop-grid">
-      {% if slop_terms %}
-        {% for hit in slop_terms %}
-          <div class="slop-word{% if hit.count > 1 or hit.category == 'AI Sludge Phrases' %} hot{% endif %}">
-            <div class="w">{{ hit.phrase }}</div>
-            <div class="c"><span>x{{ hit.count }}</span><span>{{ hit.category }}</span></div>
-            <div class="stripe" style="--p: {{ [hit.count * 18, 100]|min }}%"></div>
-          </div>
-        {% endfor %}
-      {% else %}
-        <div class="slop-word">
-          <div class="w">No flagged terms</div>
-          <div class="c"><span>x0</span><span>clear</span></div>
-          <div class="stripe" style="--p: 0%"></div>
-        </div>
-      {% endif %}
-    </div>
-  </section>
-
-  <div class="sect-head">
-    <div class="num">04</div>
-    <h2>What to <em>do about it</em>.</h2>
-    <div class="note">Ranked by the app's line-level recommendations.</div>
-  </div>
-
-  <section class="recs">
-    <div class="rec-list">
-      {% if rewrites %}
-        {% for rewrite in rewrites %}
-          <article class="rec {% if loop.index <= 2 %}high{% elif loop.index <= 4 %}med{% else %}low{% endif %}">
-            <div class="idx">{{ "%02d"|format(loop.index) }}</div>
-            <div class="body">
-              <h4>Rewrite <em>{{ rewrite.source }}</em>.</h4>
-              <p>{{ rewrite.reason }}</p>
-              <div class="rewrite-box">{{ rewrite.rewrite }}</div>
-              <div class="actions">
-                <button class="primary" type="button" data-copy="{{ rewrite.rewrite }}">Copy rewrite</button>
-                <button type="button" data-copy="{{ rewrite.original }}">Copy original</button>
-              </div>
-            </div>
-            <div class="meta">
-              <div>
-                <div class="k">Priority</div>
-                <div class="pri-pill">{% if loop.index <= 2 %}high{% elif loop.index <= 4 %}med{% else %}low{% endif %}</div>
-              </div>
-              <div>
-                <div class="k">Scope</div>
-                <div class="scope">{{ rewrite.source }}</div>
-              </div>
-            </div>
-          </article>
-        {% endfor %}
-      {% else %}
-        <article class="rec low">
-          <div class="idx">01</div>
-          <div class="body">
-            <h4>No line-level rewrites returned.</h4>
-            <p>{{ page.recommended_next_action }}</p>
-          </div>
-          <div class="meta">
-            <div><div class="k">Priority</div><div class="pri-pill">review</div></div>
-          </div>
-        </article>
-      {% endif %}
-    </div>
-  </section>
-
-  <section class="action-row">
-    <h3>Fix the red ones and run the next pass.</h3>
-    <div class="action-buttons">
-      <button class="a" type="button" data-copy="{{ page.recommended_next_action }}">Copy next action</button>
-      <a class="a ghost" href="{{ page.url }}" target="_blank" rel="noreferrer">Open source page</a>
-      <a class="a ghost" href="/">Run another audit</a>
-    </div>
-  </section>
-
-  <footer class="footer">
-    <div class="left">
-      <span>Brand voice scan</span>
-      <span>{{ scan.brand_voice_source }}</span>
-    </div>
-    <div class="right">Revisi by SplitPea</div>
   </footer>
 </div>
 {% endblock %}
