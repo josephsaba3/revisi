@@ -2062,19 +2062,75 @@ button:disabled {
 .audit-actions {
   justify-content: flex-end;
   border-left: 1px solid #cfcac0;
+  padding: 0 18px;
+  position: relative;
 }
 
-.audit-actions {
+.action-menu {
+  position: relative;
+}
+
+.action-menu summary {
+  width: 44px;
+  height: 44px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  place-items: center;
+  border: 1px solid #cfcac0;
+  background: #f7f5ee;
+  cursor: pointer;
+  list-style: none;
 }
 
-.audit-actions a,
-.audit-actions button,
+.action-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.action-menu summary span,
+.action-menu summary span::before,
+.action-menu summary span::after {
+  width: 5px;
+  height: 5px;
+  display: block;
+  border-radius: 50%;
+  background: #171611;
+}
+
+.action-menu summary span {
+  position: relative;
+}
+
+.action-menu summary span::before,
+.action-menu summary span::after {
+  content: "";
+  position: absolute;
+  top: 0;
+}
+
+.action-menu summary span::before {
+  left: -10px;
+}
+
+.action-menu summary span::after {
+  right: -10px;
+}
+
+.action-menu-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 10;
+  width: 190px;
+  border: 1px solid #cfcac0;
+  background: #f7f5ee;
+  box-shadow: 0 18px 42px rgb(25 22 15 / 12%);
+}
+
+.action-menu-panel a,
+.action-menu-panel button,
 .audit-bottom-bar a,
 .audit-bottom-bar button,
 .finding-actions button {
-  height: 100%;
+  min-height: 52px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2086,9 +2142,29 @@ button:disabled {
   font-weight: 650;
 }
 
-.audit-actions a:first-child {
+.action-menu-panel a,
+.action-menu-panel button {
+  width: 100%;
+  justify-content: flex-start;
+  border-left: 0;
+  border-bottom: 1px solid #cfcac0;
+  padding: 0 18px;
+  text-align: left;
+}
+
+.action-menu-panel a:last-child,
+.action-menu-panel button:last-child {
+  border-bottom: 0;
+}
+
+.action-menu-panel a:first-child {
   background: #11100b;
   color: #fffdf7;
+}
+
+.audit-bottom-bar a,
+.audit-bottom-bar button {
+  height: 100%;
 }
 
 .audit-pages,

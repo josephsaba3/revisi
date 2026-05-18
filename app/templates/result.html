@@ -23,9 +23,16 @@
       <span>Last scan {{ scan.created_at.strftime("%d %b %Y") if scan.created_at else "today" }}</span>
     </div>
     <nav class="audit-actions" aria-label="Report actions">
-      <a href="/">+ New scan</a>
-      <a href="{{ page.url }}" target="_blank" rel="noreferrer">Source page</a>
-      <button type="button" data-export-pdf>Export PDF</button>
+      <details class="action-menu">
+        <summary aria-label="Open report actions">
+          <span aria-hidden="true"></span>
+        </summary>
+        <div class="action-menu-panel">
+          <a href="/">+ New scan</a>
+          <a href="{{ page.url }}" target="_blank" rel="noreferrer">Source page</a>
+          <button type="button" data-export-pdf>Export PDF</button>
+        </div>
+      </details>
     </nav>
   </header>
 
