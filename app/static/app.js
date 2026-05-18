@@ -163,6 +163,21 @@
   const loaderErrorText = document.getElementById("loader-error-text");
   const loaderRetry = document.getElementById("loader-retry");
   const loaderBack = document.getElementById("loader-back");
+  let theatricalStartedAt = null;
+  let pendingReportUrl = null;
+  let redirectTimer = null;
+  const theatricalStepDurations = {
+    validate: 1200,
+    guide: 1100,
+    fetch: 1400,
+    extract: 1400,
+    phrases: 1200,
+    brief: 1100,
+    ground: 1000,
+    score: 1100,
+    save: 3000,
+    finish: 900,
+  };
 
   if (!form || !urlInput) return;
 
@@ -309,6 +324,7 @@
   optionsGrid?.addEventListener("click", (event) => {
     const button = event.target.closest(".opt");
     if (!button) return;
+    if (button.getAttribute("aria-disabled") === "true") return;
     state.depth = button.dataset.depth || "scan";
     if (depthInput) depthInput.value = state.depth;
     optionsGrid.querySelectorAll(".opt").forEach((option) => {
@@ -322,6 +338,9 @@
     if (!loader) return;
     loader.classList.add("on");
     loader.setAttribute("aria-hidden", "false");
+    theatricalStartedAt = performance.now();
+    pendingReportUrl = null;
+    if (redirectTimer) window.clearTimeout(redirectTimer);
     clearLoaderError();
     renderProgress({
       status: "queued",
@@ -360,7 +379,8 @@
       renderProgress(data);
 
       if (data.status === "done" && data.report_url) {
-        window.location.assign(data.report_url);
+        pendingReportUrl = data.report_url;
+        maybeRedirectWhenTheaterEnds(data);
         return;
       }
       if (data.status === "error") {
@@ -374,7 +394,7 @@
   }
 
   function renderProgress(data) {
-    const steps = data.steps || [];
+    const steps = getTheatricalSteps(data);
     if (log) {
       log.innerHTML = steps.map((step) => {
         const status = step.status || "pending";
@@ -392,6 +412,60 @@
       const completed = data.completed_steps || steps.filter((step) => step.status === "done").length;
       progressBar.style.width = `${Math.min(100, Math.round((completed / total) * 100))}%`;
     }
+  }
+
+  function getTheatricalSteps(data) {
+    const steps = data.steps || [];
+    if (!steps.length || data.status === "error") return steps;
+    const startedAt = theatricalStartedAt || performance.now();
+    const elapsedMs = performance.now() - startedAt;
+    let remaining = elapsedMs;
+    let activeIndex = steps.length - 1;
+
+    for (let index = 0; index < steps.length; index += 1) {
+      const duration = theatricalStepDurations[steps[index].key] ?? 1200;
+      if (remaining < duration) {
+        activeIndex = index;
+        break;
+      }
+      remaining -= duration;
+      activeIndex = index + 1;
+    }
+
+    const actualActiveIndex = data.status === "done"
+      ? steps.length
+      : steps.findIndex((step) => step.status !== "done");
+    if (actualActiveIndex >= 0) {
+      activeIndex = Math.min(activeIndex, actualActiveIndex);
+    }
+
+    return steps.map((step, index) => {
+      let status = "pending";
+      if (index < activeIndex) status = "done";
+      if (index === activeIndex) status = "running";
+      if (activeIndex >= steps.length) status = "done";
+      return {
+        ...step,
+        status,
+        elapsed_seconds: index < activeIndex ? Math.max(1, Math.round((theatricalStepDurations[step.key] ?? 1200) / 1000)) : step.elapsed_seconds,
+      };
+    });
+  }
+
+  function theaterIsComplete(data) {
+    const steps = data.steps || [];
+    if (!steps.length || !theatricalStartedAt) return true;
+    const requiredMs = steps.reduce((total, step) => total + (theatricalStepDurations[step.key] ?? 1200), 0);
+    return performance.now() - theatricalStartedAt >= requiredMs;
+  }
+
+  function maybeRedirectWhenTheaterEnds(data) {
+    renderProgress(data);
+    if (theaterIsComplete(data)) {
+      window.location.assign(pendingReportUrl);
+      return;
+    }
+    redirectTimer = window.setTimeout(() => maybeRedirectWhenTheaterEnds(data), 250);
   }
 
   function formatElapsed(seconds) {

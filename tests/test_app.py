@@ -2,8 +2,22 @@ from app.config import get_settings
 from app import main
 from app.main import _complete_job, _create_scan_job, _perform_scan, _save_scan, _scan_attempts, _scan_jobs
 from app.schemas import AuditIssue, AuditResult, ExtractedLine, ExtractedPage, RewriteSuggestion, Scorecard
+from app.services.extractor import FetchError
 from fastapi.testclient import TestClient
 from app.main import app, get_db
+from urllib import robotparser
+
+
+def _allow_all_robots():
+    parser = robotparser.RobotFileParser()
+    parser.parse([])
+    return parser
+
+
+def _disallow_all_robots():
+    parser = robotparser.RobotFileParser()
+    parser.parse(["User-agent: *", "Disallow: /"])
+    return parser
 
 
 def test_homepage_renders() -> None:
@@ -287,11 +301,12 @@ def test_perform_scan_updates_real_progress(monkeypatch, db_session) -> None:
 
     monkeypatch.setattr(main, "fetch_html", fake_fetch_html)
     monkeypatch.setattr(main, "analyze_page", fake_analyze_page)
+    monkeypatch.setattr(main, "_fetch_robots_rules", lambda _url: main.asyncio.sleep(0, result=_allow_all_robots()))
     _scan_jobs.clear()
     job_id = _create_scan_job()
 
     try:
-        scan = main.asyncio.run(_perform_scan("example.com", "", "", db_session, job_id))
+        scan = main.asyncio.run(_perform_scan("example.com", "scan", "", "", db_session, job_id))
         payload = main._job_snapshot(_scan_jobs[job_id])
 
         assert scan.public_token
@@ -299,3 +314,98 @@ def test_perform_scan_updates_real_progress(monkeypatch, db_session) -> None:
         assert all(step["status"] == "done" for step in payload["steps"])
     finally:
         _scan_jobs.clear()
+
+
+def test_perform_scan_site_depth_saves_multiple_pages(monkeypatch, db_session) -> None:
+    pages = {
+        "https://example.com": """
+            <main>
+              <h1>Home page copy.</h1>
+              <a href="/pricing">Pricing</a>
+              <a href="/blog/launch">Launch post</a>
+            </main>
+        """,
+        "https://example.com/pricing": "<main><h1>Pricing page copy.</h1></main>",
+        "https://example.com/blog/launch": "<main><h1>Launch post copy.</h1></main>",
+    }
+
+    async def fake_fetch_html(url: str) -> str:
+        return pages[url]
+
+    def fake_analyze_page(page, _brand_voice):
+        return AuditResult(
+            overall_score=78,
+            verdict="Strong, with clear revision targets",
+            scoring_context="General brand copy",
+            contextual_modifiers=["Message Hierarchy"],
+            scores=Scorecard(
+                brand_fit=80,
+                audience_fit=80,
+                clarity=80,
+                human_sound=80,
+                specificity=70,
+                trust=75,
+                distinctiveness=70,
+            ),
+            ai_sludge_risk=20,
+            top_issues=[],
+            line_level_rewrites=[],
+            voice_summary=["Plain and direct"],
+            recommended_next_action=f"Tighten {page.url}.",
+        )
+
+    monkeypatch.setattr(main, "fetch_html", fake_fetch_html)
+    monkeypatch.setattr(main, "analyze_page", fake_analyze_page)
+    monkeypatch.setattr(main, "_fetch_robots_rules", lambda _url: main.asyncio.sleep(0, result=_allow_all_robots()))
+
+    scan = main.asyncio.run(_perform_scan("example.com", "site", "", "", db_session))
+
+    assert len(scan.page_results) == 3
+    assert [page.url for page in scan.page_results] == [
+        "https://example.com",
+        "https://example.com/pricing",
+        "https://example.com/blog/launch",
+    ]
+
+
+def test_discover_scan_urls_uses_sitemap_before_page_links(monkeypatch) -> None:
+    html = """
+        <main>
+          <a href="/pricing">Pricing</a>
+          <a href="/blog/launch">Launch</a>
+        </main>
+    """
+
+    async def fake_fetch_sitemap_locations(_sitemap_url: str) -> list[str]:
+        return [
+            "https://example.com/features",
+            "https://example.com/blog/from-sitemap",
+        ]
+
+    monkeypatch.setattr(main, "_fetch_sitemap_locations", fake_fetch_sitemap_locations)
+
+    urls = main.asyncio.run(
+        main._discover_scan_urls(html, "https://example.com", "site", 4, _allow_all_robots())
+    )
+
+    assert urls == [
+        "https://example.com",
+        "https://example.com/features",
+        "https://example.com/blog/from-sitemap",
+        "https://example.com/pricing",
+    ]
+
+
+def test_perform_scan_stops_when_robots_disallows_start_url(monkeypatch, db_session) -> None:
+    async def fake_fetch_html(_url: str) -> str:
+        return "<main><h1>Should not fetch.</h1></main>"
+
+    monkeypatch.setattr(main, "fetch_html", fake_fetch_html)
+    monkeypatch.setattr(main, "_fetch_robots_rules", lambda _url: main.asyncio.sleep(0, result=_disallow_all_robots()))
+
+    try:
+        main.asyncio.run(_perform_scan("example.com", "scan", "", "", db_session))
+    except FetchError as exc:
+        assert "robots.txt" in str(exc)
+    else:
+        raise AssertionError("Expected robots.txt disallow to stop the scan")

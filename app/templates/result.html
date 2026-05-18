@@ -39,7 +39,7 @@
   <aside class="audit-pages" aria-label="Audited pages">
     <section class="site-score">
       <div>
-        <strong>{{ page.overall_score }}</strong>
+        <strong>{{ site_score }}</strong>
         <span>/ 100</span>
       </div>
       <p>Brand voice</p>
@@ -49,7 +49,7 @@
       <div class="page-list-head">
         <div>
           <h2>Pages</h2>
-          <span>1</span>
+          <span>{{ pages|length }}</span>
         </div>
         <button class="pages-toggle" type="button" aria-label="Collapse pages sidebar" aria-pressed="false" data-pages-toggle>
           <span aria-hidden="true">‹</span>
@@ -60,17 +60,22 @@
         <button type="button">All</button>
         <button type="button">On-brand</button>
       </div>
-      <a class="page-row is-selected" href="#selected-page">
-        <span class="page-dot {% if page.overall_score < 60 %}bad{% elif page.overall_score < 75 %}warn{% endif %}"></span>
-        <span class="page-row-main">
-          <strong>{{ title|truncate(34, True) }}</strong>
-          <em>{{ page_path }}</em>
-        </span>
-        <span class="page-row-score">
-          <strong>{{ page.overall_score }}</strong>
-          <em>{{ flagged_count }} flag{% if flagged_count != 1 %}s{% endif %}</em>
-        </span>
-      </a>
+      {% for listed_page in pages %}
+        {% set listed_issues = listed_page.issues|list %}
+        {% set listed_url = listed_page.url.replace("https://", "").replace("http://", "") %}
+        {% set listed_path = "/" + listed_url.split("/", 1)[1] if "/" in listed_url else "/" %}
+        <a class="page-row{% if listed_page.id == page.id %} is-selected{% endif %}" href="/r/{{ scan.public_token }}?page_id={{ listed_page.id }}">
+          <span class="page-dot {% if listed_page.overall_score < 60 %}bad{% elif listed_page.overall_score < 75 %}warn{% endif %}"></span>
+          <span class="page-row-main">
+            <strong>{{ (listed_page.title or listed_page.url)|truncate(34, True) }}</strong>
+            <em>{{ listed_path }}</em>
+          </span>
+          <span class="page-row-score">
+            <strong>{{ listed_page.overall_score }}</strong>
+            <em>{{ listed_issues|length }} flag{% if listed_issues|length != 1 %}s{% endif %}</em>
+          </span>
+        </a>
+      {% endfor %}
     </section>
 
     <section class="reviewed-by">

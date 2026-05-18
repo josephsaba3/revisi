@@ -1,9 +1,14 @@
 from contextlib import asynccontextmanager
 import asyncio
 import logging
+import xml.etree.ElementTree as ET
+from urllib import robotparser
 import time
+from urllib.parse import urljoin, urlparse, urlunparse
 from uuid import uuid4
 
+from bs4 import BeautifulSoup
+import httpx
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -20,6 +25,7 @@ from .services.phrase_flags import find_phrase_flags
 
 
 logger = logging.getLogger(__name__)
+CRAWLER_USER_AGENT = "BrandVoiceAuditor/0.1"
 _scan_attempts: dict[str, list[float]] = {}
 _scan_jobs: dict[str, dict] = {}
 _scan_job_ttl_seconds = 1800
@@ -33,7 +39,7 @@ _scan_steps = [
     {"key": "models", "label": "Waiting for models to finish"},
     {"key": "ground", "label": "Checking quotes against page copy"},
     {"key": "score", "label": "Recomputing score and verdict"},
-    {"key": "save", "label": "Saving the report"},
+    {"key": "save", "label": "Generating the report"},
     {"key": "finish", "label": "Opening the report"},
 ]
 
@@ -59,6 +65,7 @@ async def scan(
     request: Request,
     background_tasks: BackgroundTasks,
     url: str = Form(...),
+    depth: str = Form("scan"),
     brand_voice: str = Form(""),
     brand_voice_file: UploadFile | None = File(None),
 ) -> JSONResponse:
@@ -70,7 +77,7 @@ async def scan(
 
     uploaded_voice = await _read_brand_voice_file(brand_voice_file)
     job_id = _create_scan_job()
-    background_tasks.add_task(_run_scan_job, job_id, url, brand_voice, uploaded_voice)
+    background_tasks.add_task(_run_scan_job, job_id, url, depth, brand_voice, uploaded_voice)
     return JSONResponse({"job_id": job_id}, status_code=202)
 
 
@@ -86,6 +93,7 @@ def scan_progress(job_id: str) -> JSONResponse:
 async def scan_sync(
     request: Request,
     url: str = Form(...),
+    depth: str = Form("scan"),
     brand_voice: str = Form(""),
     brand_voice_file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
@@ -104,7 +112,7 @@ async def scan_sync(
 
     try:
         uploaded_voice = await _read_brand_voice_file(brand_voice_file)
-        scan_model = await _perform_scan(url, brand_voice, uploaded_voice, db)
+        scan_model = await _perform_scan(url, depth, brand_voice, uploaded_voice, db)
     except (ValueError, FetchError, RuntimeError) as exc:
         return templates.TemplateResponse(
             request,
@@ -133,14 +141,14 @@ async def scan_sync(
 
 
 @app.get("/r/{public_token}", response_class=HTMLResponse)
-def result(request: Request, public_token: str, db: Session = Depends(get_db)) -> HTMLResponse:
+def result(request: Request, public_token: str, page_id: int | None = None, db: Session = Depends(get_db)) -> HTMLResponse:
     scan_model = db.query(models.Scan).filter(models.Scan.public_token == public_token).first()
     if not scan_model:
         raise HTTPException(status_code=404, detail="Scan not found")
     return templates.TemplateResponse(
         request,
         "result.html",
-        _result_template_context(scan_model),
+        _result_template_context(scan_model, page_id=page_id),
     )
 
 
@@ -189,6 +197,7 @@ async def _read_brand_voice_file(file: UploadFile | None) -> str:
 
 async def _perform_scan(
     submitted_url: str,
+    depth: str,
     brand_voice: str,
     uploaded_voice: str,
     db: Session,
@@ -196,6 +205,7 @@ async def _perform_scan(
 ) -> models.Scan:
     _start_job_step(job_id, "validate")
     normalized_url = normalize_url(submitted_url)
+    scan_depth = _normalize_scan_depth(depth)
     _finish_job_step(job_id, "validate")
 
     _start_job_step(job_id, "guide")
@@ -203,22 +213,42 @@ async def _perform_scan(
     _finish_job_step(job_id, "guide")
 
     _start_job_step(job_id, "fetch")
+    robots = await _fetch_robots_rules(normalized_url)
+    if not _robots_can_fetch(robots, normalized_url):
+        raise FetchError("That site's robots.txt does not allow Revisi to scan the submitted URL.")
     html = await fetch_html(normalized_url)
     _finish_job_step(job_id, "fetch")
 
     _start_job_step(job_id, "extract")
-    page = extract_visible_copy(html, normalized_url)
+    page_limit = _scan_page_limit(scan_depth)
+    pages = [extract_visible_copy(html, normalized_url)]
+    if page_limit > 1:
+        discovered_urls = await _discover_scan_urls(html, normalized_url, scan_depth, page_limit, robots)
+        for page_url in discovered_urls[1:]:
+            if not _robots_can_fetch(robots, page_url):
+                continue
+            try:
+                page_html = await fetch_html(page_url)
+            except FetchError:
+                continue
+            pages.append(extract_visible_copy(page_html, page_url))
+            if len(pages) >= page_limit:
+                break
     _finish_job_step(job_id, "extract")
 
     _start_job_step(job_id, "phrases")
-    find_phrase_flags(page.combined_text)
+    for page in pages:
+        find_phrase_flags(page.combined_text)
     _finish_job_step(job_id, "phrases")
 
     _start_job_step(job_id, "brief")
     _finish_job_step(job_id, "brief")
 
     _start_job_step(job_id, "models")
-    result = await asyncio.to_thread(analyze_page, page, brand_voice_text)
+    results = [
+        await asyncio.to_thread(analyze_page, page, brand_voice_text)
+        for page in pages
+    ]
     _finish_job_step(job_id, "models")
 
     _start_job_step(job_id, "ground")
@@ -228,7 +258,7 @@ async def _perform_scan(
     _finish_job_step(job_id, "score")
 
     _start_job_step(job_id, "save")
-    scan_model = _save_scan(db, submitted_url, normalized_url, brand_voice_text, page, result)
+    scan_model = _save_scan_pages(db, submitted_url, normalized_url, brand_voice_text, list(zip(pages, results)))
     _finish_job_step(job_id, "save")
 
     _start_job_step(job_id, "finish")
@@ -236,11 +266,11 @@ async def _perform_scan(
     return scan_model
 
 
-async def _run_scan_job(job_id: str, url: str, brand_voice: str, uploaded_voice: str) -> None:
+async def _run_scan_job(job_id: str, url: str, depth: str, brand_voice: str, uploaded_voice: str) -> None:
     _mark_job_running(job_id)
     db = SessionLocal()
     try:
-        scan_model = await _perform_scan(url, brand_voice, uploaded_voice, db, job_id)
+        scan_model = await _perform_scan(url, depth, brand_voice, uploaded_voice, db, job_id)
         _complete_job(job_id, f"/r/{scan_model.public_token}")
     except (ValueError, FetchError, RuntimeError) as exc:
         _fail_job(job_id, str(exc))
@@ -389,6 +419,181 @@ def _prune_scan_jobs() -> None:
         _scan_jobs.pop(job_id, None)
 
 
+def _normalize_scan_depth(depth: str) -> str:
+    return depth if depth in {"scan", "site", "deep"} else "scan"
+
+
+def _scan_page_limit(depth: str) -> int:
+    if depth == "deep":
+        return 25
+    if depth == "site":
+        return 10
+    return 1
+
+
+async def _discover_scan_urls(
+    html: str,
+    base_url: str,
+    depth: str,
+    limit: int,
+    robots: robotparser.RobotFileParser,
+) -> list[str]:
+    base = _canonical_page_url(base_url)
+    urls = [base]
+    seen = {base}
+    sitemap_urls = await _discover_sitemap_urls(base, depth, limit, robots)
+    for candidate in sitemap_urls:
+        if candidate in seen or not _same_site_url(base, candidate):
+            continue
+        if _looks_like_binary_or_utility_url(urlparse(candidate).path):
+            continue
+        if not _robots_can_fetch(robots, candidate):
+            continue
+        urls.append(candidate)
+        seen.add(candidate)
+        if len(urls) >= limit:
+            return urls
+
+    soup = BeautifulSoup(html, "lxml")
+
+    candidates = []
+    for anchor in soup.select("a[href]"):
+        href = anchor.get("href", "")
+        candidate = _canonical_page_url(urljoin(base, href))
+        if not candidate or candidate in seen:
+            continue
+        if not _same_site_url(base, candidate):
+            continue
+        parsed = urlparse(candidate)
+        if _looks_like_binary_or_utility_url(parsed.path):
+            continue
+        if not _robots_can_fetch(robots, candidate):
+            continue
+        candidates.append(candidate)
+        seen.add(candidate)
+
+    candidates.sort(key=lambda url: _scan_url_priority(url, depth))
+    urls.extend(candidates[: max(limit - len(urls), 0)])
+    return urls
+
+
+async def _fetch_robots_rules(base_url: str) -> robotparser.RobotFileParser:
+    robots_url = urljoin(base_url, "/robots.txt")
+    parser = robotparser.RobotFileParser()
+    parser.set_url(robots_url)
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=8) as client:
+            response = await client.get(robots_url, headers={"User-Agent": CRAWLER_USER_AGENT})
+        if response.status_code == 404:
+            parser.parse([])
+        else:
+            response.raise_for_status()
+            parser.parse(response.text.splitlines())
+    except httpx.HTTPError:
+        parser.parse([])
+    return parser
+
+
+def _robots_can_fetch(robots: robotparser.RobotFileParser, url: str) -> bool:
+    return robots.can_fetch(CRAWLER_USER_AGENT, url)
+
+
+async def _discover_sitemap_urls(
+    base_url: str,
+    depth: str,
+    limit: int,
+    robots: robotparser.RobotFileParser,
+) -> list[str]:
+    sitemap_urls = list(robots.site_maps() or [])
+    default_sitemap = urljoin(base_url, "/sitemap.xml")
+    if default_sitemap not in sitemap_urls:
+        sitemap_urls.append(default_sitemap)
+
+    discovered: list[str] = []
+    seen: set[str] = set()
+    for sitemap_url in sitemap_urls[:4]:
+        for candidate in await _fetch_sitemap_locations(sitemap_url):
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            if candidate.lower().endswith(".xml"):
+                for nested_candidate in await _fetch_sitemap_locations(candidate):
+                    if nested_candidate not in seen:
+                        seen.add(nested_candidate)
+                        discovered.append(_canonical_page_url(nested_candidate))
+            else:
+                discovered.append(_canonical_page_url(candidate))
+            if len(discovered) >= limit * 3:
+                break
+        if len(discovered) >= limit * 3:
+            break
+
+    discovered = [url for url in discovered if url]
+    discovered.sort(key=lambda url: _scan_url_priority(url, depth))
+    return discovered[: max(limit - 1, 0)]
+
+
+async def _fetch_sitemap_locations(sitemap_url: str) -> list[str]:
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=8) as client:
+            response = await client.get(sitemap_url, headers={"User-Agent": CRAWLER_USER_AGENT})
+        if response.status_code == 404:
+            return []
+        response.raise_for_status()
+    except httpx.HTTPError:
+        return []
+
+    try:
+        root = ET.fromstring(response.content)
+    except ET.ParseError:
+        return []
+
+    locations = []
+    for node in root.iter():
+        if node.tag.endswith("loc") and node.text:
+            locations.append(node.text.strip())
+    return locations
+
+
+def _same_site_url(base_url: str, candidate_url: str) -> bool:
+    base = urlparse(base_url)
+    candidate = urlparse(candidate_url)
+    return (
+        candidate.scheme in {"http", "https"}
+        and candidate.netloc.lower() == base.netloc.lower()
+    )
+
+
+def _canonical_page_url(url: str) -> str:
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        return ""
+    path = parsed.path or ""
+    if path != "/":
+        path = path.rstrip("/")
+    else:
+        path = ""
+    return urlunparse((parsed.scheme, parsed.netloc, path, "", "", ""))
+
+
+def _looks_like_binary_or_utility_url(path: str) -> bool:
+    lowered = path.lower()
+    blocked_suffixes = (
+        ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".pdf", ".zip", ".mp4", ".mov",
+        ".css", ".js", ".ico", ".xml", ".json",
+    )
+    blocked_parts = ("/cdn-cgi/", "/wp-json/", "/feed", "/tag/", "/author/")
+    return lowered.endswith(blocked_suffixes) or any(part in lowered for part in blocked_parts)
+
+
+def _scan_url_priority(url: str, depth: str) -> tuple[int, int, str]:
+    path = urlparse(url).path.lower()
+    is_blog = any(part in path for part in ("/blog", "/articles", "/resources", "/guides"))
+    if depth == "deep":
+        return (0 if is_blog else 1, path.count("/"), path)
+    return (1 if is_blog else 0, path.count("/"), path)
+
+
 def _save_scan(
     db: Session,
     submitted_url: str,
@@ -397,60 +602,75 @@ def _save_scan(
     page,
     result: AuditResult,
 ) -> models.Scan:
+    return _save_scan_pages(db, submitted_url, normalized_url, brand_voice_text, [(page, result)])
+
+
+def _save_scan_pages(
+    db: Session,
+    submitted_url: str,
+    normalized_url: str,
+    brand_voice_text: str | None,
+    page_results: list[tuple[object, AuditResult]],
+) -> models.Scan:
     scan_model = models.Scan(
         submitted_url=submitted_url,
         normalized_url=normalized_url,
         brand_voice_source="provided" if brand_voice_text else "inferred voice, not confirmed",
         brand_voice_text=brand_voice_text,
     )
-    page_model = models.PageResult(
-        url=page.url,
-        title=page.title,
-        meta_description=page.meta_description,
-        headings=page.headings,
-        ctas=page.ctas,
-        extracted_copy=[line.model_dump() for line in page.lines],
-        overall_score=result.overall_score,
-        verdict=result.verdict,
-        scoring_context=result.scoring_context,
-        contextual_modifiers=result.contextual_modifiers,
-        scores=result.scores.model_dump(),
-        ai_sludge_risk=result.ai_sludge_risk,
-        voice_summary=result.voice_summary,
-        recommended_next_action=result.recommended_next_action,
-        raw_result=result.model_dump(),
-    )
-    page_model.issues = [
-        models.Issue(
-            issue_type=issue.issue_type,
-            priority=issue.priority,
-            source=issue.source,
-            line_id=issue.line_id,
-            original_copy=issue.original_copy,
-            explanation=issue.explanation,
-            suggested_rewrite=issue.suggested_rewrite,
+    scan_model.page_results = []
+    for page, result in page_results:
+        page_model = models.PageResult(
+            url=page.url,
+            title=page.title,
+            meta_description=page.meta_description,
+            headings=page.headings,
+            ctas=page.ctas,
+            extracted_copy=[line.model_dump() for line in page.lines],
+            overall_score=result.overall_score,
+            verdict=result.verdict,
+            scoring_context=result.scoring_context,
+            contextual_modifiers=result.contextual_modifiers,
+            scores=result.scores.model_dump(),
+            ai_sludge_risk=result.ai_sludge_risk,
+            voice_summary=result.voice_summary,
+            recommended_next_action=result.recommended_next_action,
+            raw_result=result.model_dump(),
         )
-        for issue in result.top_issues
-    ]
-    page_model.rewrites = [
-        models.Rewrite(
-            source=rewrite.source,
-            line_id=rewrite.line_id,
-            original=rewrite.original,
-            rewrite=rewrite.rewrite,
-            reason=rewrite.reason,
-        )
-        for rewrite in result.line_level_rewrites
-    ]
-    scan_model.page_result = page_model
+        page_model.issues = [
+            models.Issue(
+                issue_type=issue.issue_type,
+                priority=issue.priority,
+                source=issue.source,
+                line_id=issue.line_id,
+                original_copy=issue.original_copy,
+                explanation=issue.explanation,
+                suggested_rewrite=issue.suggested_rewrite,
+            )
+            for issue in result.top_issues
+        ]
+        page_model.rewrites = [
+            models.Rewrite(
+                source=rewrite.source,
+                line_id=rewrite.line_id,
+                original=rewrite.original,
+                rewrite=rewrite.rewrite,
+                reason=rewrite.reason,
+            )
+            for rewrite in result.line_level_rewrites
+        ]
+        scan_model.page_results.append(page_model)
     db.add(scan_model)
     db.commit()
     db.refresh(scan_model)
     return scan_model
 
 
-def _result_template_context(scan_model: models.Scan) -> dict:
-    page = scan_model.page_result
+def _result_template_context(scan_model: models.Scan, page_id: int | None = None) -> dict:
+    pages = list(scan_model.page_results or [])
+    if not pages:
+        raise HTTPException(status_code=404, detail="Scan has no page results")
+    page = next((candidate for candidate in pages if candidate.id == page_id), pages[0])
     extracted_text = "\n".join(
         line.get("text", "") for line in (page.extracted_copy or []) if isinstance(line, dict)
     )
@@ -509,6 +729,8 @@ def _result_template_context(scan_model: models.Scan) -> dict:
     return {
         "scan": scan_model,
         "page": page,
+        "pages": pages,
+        "site_score": round(sum(item.overall_score for item in pages) / len(pages)),
         "issues": page.issues,
         "rewrites": page.rewrites,
         "slop_terms": slop_terms,

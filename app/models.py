@@ -18,7 +18,19 @@ class Scan(Base):
     brand_voice_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    page_result: Mapped["PageResult"] = relationship(back_populates="scan", cascade="all, delete-orphan")
+    page_results: Mapped[list["PageResult"]] = relationship(
+        back_populates="scan",
+        cascade="all, delete-orphan",
+        order_by="PageResult.id",
+    )
+
+    @property
+    def page_result(self) -> "PageResult | None":
+        return self.page_results[0] if self.page_results else None
+
+    @page_result.setter
+    def page_result(self, value: "PageResult") -> None:
+        self.page_results = [value]
 
 
 class PageResult(Base):
@@ -42,7 +54,7 @@ class PageResult(Base):
     recommended_next_action: Mapped[str] = mapped_column(Text)
     raw_result: Mapped[dict] = mapped_column(JSON, default=dict)
 
-    scan: Mapped[Scan] = relationship(back_populates="page_result")
+    scan: Mapped[Scan] = relationship(back_populates="page_results")
     issues: Mapped[list["Issue"]] = relationship(back_populates="page_result", cascade="all, delete-orphan")
     rewrites: Mapped[list["Rewrite"]] = relationship(back_populates="page_result", cascade="all, delete-orphan")
 
