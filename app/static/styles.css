@@ -1975,7 +1975,7 @@ button:disabled {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 350px minmax(560px, 1fr) 450px;
-  grid-template-rows: 88px 1fr 78px;
+  grid-template-rows: 48px 1fr 78px;
 }
 
 .audit-workspace.is-pages-collapsed {
@@ -2008,15 +2008,15 @@ button:disabled {
 
 .audit-brand {
   gap: 14px;
-  padding: 0 32px;
+  padding: 0 20px;
   border-right: 1px solid #cfcac0;
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 750;
 }
 
 .audit-mark {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border: 2px solid #15140f;
   border-radius: 50%;
   position: relative;
@@ -2026,22 +2026,22 @@ button:disabled {
 .audit-mark::after {
   content: "";
   position: absolute;
-  left: 14px;
-  top: 5px;
+  left: 11px;
+  top: 4px;
   width: 2px;
-  height: 10px;
+  height: 8px;
   background: #15140f;
   transform-origin: bottom;
 }
 
 .audit-mark::after {
-  height: 12px;
+  height: 10px;
   transform: rotate(112deg);
 }
 
 .audit-status {
   gap: 13px;
-  padding: 0 30px;
+  padding: 0 24px;
   color: #848177;
 }
 
@@ -2062,7 +2062,7 @@ button:disabled {
 .audit-actions {
   justify-content: flex-end;
   border-left: 1px solid #cfcac0;
-  padding: 0 18px;
+  padding: 0 12px;
   position: relative;
 }
 
@@ -2071,11 +2071,11 @@ button:disabled {
 }
 
 .action-menu summary {
-  width: 44px;
-  height: 44px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
-  border: 1px solid #cfcac0;
+  border: 0;
   background: #f7f5ee;
   cursor: pointer;
   list-style: none;
