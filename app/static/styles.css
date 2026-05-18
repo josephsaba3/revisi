@@ -2053,10 +2053,14 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.audit-status span,
+.audit-status strong {
+  font-size: 12px;
+}
+
 .audit-status strong {
   color: #171611;
   font-family: var(--mono);
-  font-size: 14px;
 }
 
 .audit-actions {
@@ -2076,7 +2080,6 @@ button:disabled {
   display: grid;
   place-items: center;
   border: 0;
-  background: #f7f5ee;
   cursor: pointer;
   list-style: none;
 }

@@ -64,6 +64,26 @@
   });
 
   document.addEventListener("click", (event) => {
+    document.querySelectorAll(".action-menu[open]").forEach((menu) => {
+      if (menu.contains(event.target)) return;
+      menu.removeAttribute("open");
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    document.querySelectorAll(".action-menu[open]").forEach((menu) => {
+      menu.removeAttribute("open");
+    });
+  });
+
+  document.querySelectorAll(".action-menu a, .action-menu button").forEach((item) => {
+    item.addEventListener("click", () => {
+      item.closest(".action-menu")?.removeAttribute("open");
+    });
+  });
+
+  document.addEventListener("click", (event) => {
     const trigger = event.target.closest("[data-finding-trigger]");
     if (!trigger) return;
 
