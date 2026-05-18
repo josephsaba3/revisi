@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IBM Plex Contenders</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Atkinson+Hyperlegible:wght@400;700&family=Figtree:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&family=Recursive:wght,CASL,CRSV,MONO@400..700,0,0,0&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --paper: #f7f5ee;
+        --shell: #efeee8;
+        --line: #cfcac0;
+        --ink: #161611;
+        --muted: #807c73;
+        --rust: #be4722;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--shell);
+        color: var(--ink);
+        font-family: system-ui, sans-serif;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 32px));
+        margin: 28px auto 48px;
+      }
+
+      h1 {
+        margin: 0 0 6px;
+        font-size: 20px;
+      }
+
+      .intro {
+        margin: 0 0 18px;
+        color: var(--muted);
+      }
+
+      .font-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 22px;
+      }
+
+      .sample {
+        border: 1px solid var(--line);
+        background: var(--paper);
+      }
+
+      .sample-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+        background: var(--shell);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .sample-label span {
+        color: var(--muted);
+        font-weight: 500;
+      }
+
+      .topbar {
+        height: 48px;
+        display: grid;
+        grid-template-columns: 150px 1fr 46px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .brand,
+      .status,
+      .menu {
+        display: flex;
+        align-items: center;
+      }
+
+      .brand {
+        gap: 10px;
+        padding: 0 16px;
+        border-right: 1px solid var(--line);
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .mark {
+        width: 24px;
+        height: 24px;
+        border: 2px solid var(--ink);
+        border-radius: 50%;
+      }
+
+      .status {
+        gap: 10px;
+        padding: 0 16px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      .status strong {
+        color: var(--ink);
+      }
+
+      .menu {
+        justify-content: center;
+        border-left: 1px solid var(--line);
+      }
+
+      .dots,
+      .dots::before,
+      .dots::after {
+        width: 5px;
+        height: 5px;
+        display: block;
+        border-radius: 50%;
+        background: var(--ink);
+      }
+
+      .dots {
+        position: relative;
+      }
+
+      .dots::before,
+      .dots::after {
+        content: "";
+        position: absolute;
+        top: 0;
+      }
+
+      .dots::before {
+        left: -10px;
+      }
+
+      .dots::after {
+        right: -10px;
+      }
+
+      .summary {
+        padding: 12px 24px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .summary p {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      .summary strong {
+        color: var(--rust);
+      }
+
+      .summary span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .document-head {
+        display: grid;
+        grid-template-columns: 1fr 130px;
+        align-items: center;
+        gap: 20px;
+        padding: 16px 26px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .document-head small {
+        color: #918d83;
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      .document-head h2 {
+        margin: 8px 0 0;
+        font-size: 28px;
+        line-height: 1.15;
+        letter-spacing: 0;
+      }
+
+      .document-head p {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .score {
+        text-align: right;
+      }
+
+      .score strong {
+        color: var(--rust);
+        font-size: 36px;
+        line-height: 1;
+      }
+
+      .score span {
+        color: var(--muted);
+        font-family: var(--mono);
+      }
+
+      .score em {
+        display: block;
+        margin-top: 4px;
+        color: #918d83;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-style: normal;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+      }
+
+      .copy {
+        padding: 22px 26px 28px;
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .flagged {
+        display: inline;
+        background-image: linear-gradient(#ead0c2, #ead0c2);
+        background-size: 100% 58%;
+        background-position: 0 62%;
+        background-repeat: no-repeat;
+        text-decoration: underline;
+        text-decoration-color: var(--rust);
+        text-decoration-thickness: 2px;
+        text-underline-offset: 6px;
+      }
+
+      .plex {
+        font-family: "IBM Plex Sans", system-ui, sans-serif;
+      }
+
+      .public {
+        font-family: "Public Sans", system-ui, sans-serif;
+      }
+
+      .atkinson {
+        font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+      }
+
+      .instrument {
+        font-family: "Instrument Sans", system-ui, sans-serif;
+      }
+
+      .archivo {
+        font-family: "Archivo", system-ui, sans-serif;
+      }
+
+      .work {
+        font-family: "Work Sans", system-ui, sans-serif;
+      }
+
+      .figtree {
+        font-family: "Figtree", system-ui, sans-serif;
+      }
+
+      .geist {
+        font-family: "Geist", system-ui, sans-serif;
+      }
+
+      .noto {
+        font-family: "Noto Sans", system-ui, sans-serif;
+      }
+
+      .recursive {
+        font-family: "Recursive", system-ui, sans-serif;
+      }
+
+      @media (max-width: 900px) {
+        .font-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <h1>IBM Plex Contenders</h1>
+      <p class="intro">Same Revisi UI sample, focused on alternatives near the IBM Plex direction.</p>
+
+      <section class="font-grid">
+        <article class="sample plex">
+          <div class="sample-label">IBM Plex Sans <span>current favorite baseline</span></div>
+          <div class="topbar"><div class="brand"><span class="mark"></span>Revisi</div><div class="status"><span>Auditing</span><strong>splitpea.co</strong><span>Last scan 17 May 2026</span></div><div class="menu"><span class="dots"></span></div></div>
+          <section class="summary"><p>Mostly strong, with clear revision targets. <strong>6 of 93 sentences</strong> need attention.</p><span>The page is broadly aligned, with a few line-level edits worth reviewing.</span></section>
+          <section class="document-head"><div><small>splitpea.co</small><h2>A/B Testing Tool for Small Websites | SplitPea</h2><p>SaaS feature page</p></div><div class="score"><strong>87</strong><span>/100</span><em>Page score</em></div></section>
+          <div class="copy">Today we're announcing a calmer way to review brand voice. <span class="flagged">This sentence needs attention because it sounds generic and templated.</span></div>
+        </article>
+
+        <article class="sample public">
+          <div class="sample-label">Public Sans <span>quieter, official, calm</span></div>
+          <div class="topbar"><div class="brand"><span class="mark"></span>Revisi</div><div class="status"><span>Auditing</span><strong>splitpea.co</strong><span>Last scan 17 May 2026</span></div><div class="menu"><span class="dots"></span></div></div>
+          <section class="summary"><p>Mostly strong, with clear revision targets. <strong>6 of 93 sentences</strong> need attention.</p><span>The page is broadly aligned, with a few line-level edits worth reviewing.</span></section>
+          <section class="document-head"><div><small>splitpea.co</small><h2>A/B Testing Tool for Small Websites | SplitPea</h2><p>SaaS feature page</p></div><div class="score"><strong>87</strong><span>/100</span><em>Page score</em></div></section>
+          <div class="copy">Today we're announcing a calmer way to review brand voice. <span class="flagged">This sentence needs attention because it sounds generic and templated.</span></div>
+        </article>
+
+        <article class="sample atkinson">
+          <div class="sample-label">Atkinson Hyperlegible <span>readable, human, distinctive</span></div>
+          <div class="topbar"><div class="brand"><span class="mark"></span>Revisi</div><div class="status"><span>Auditing</span><strong>splitpea.co</strong><span>Last scan 17 May 2026</span></div><div class="menu"><span class="dots"></span></div></div>
+          <section class="summary"><p>Mostly strong, with clear revision targets. <strong>6 of 93 sentences</strong> need attention.</p><span>The page is broadly aligned, with a few line-level edits worth reviewing.</span></section>
+          <section class="document-head"><div><small>splitpea.co</small><h2>A/B Testing Tool for Small Websites | SplitPea</h2><p>SaaS feature page</p></div><div class="score"><strong>87</strong><span>/100</span><em>Page score</em></div></section>
+          <div class="copy">Today we're announcing a calmer way to review brand voice. <span class="flagged">This sentence needs attention because it sounds generic and templated.</span></div>
+        </article>
+
+        <article class="sample instrument">
+          <div class="sample-label">Instrument Sans <span>designed, clean, contemporary</span></div>
+          <div class="topbar"><div class="brand"><span class="mark"></span>Revisi</div><div class="status"><span>Auditing</span><strong>splitpea.co</strong><span>Last scan 17 May 2026</span></div><div class="menu"><span class="dots"></span></div></div>
+          <section class="summary"><p>Mostly strong, with clear revision targets. <strong>6 of 93 sentences</strong> need attention.</p><span>The page is broadly aligned, with a few line-level edits worth reviewing.</span></section>
+          <section class="document-head"><div><small>splitpea.co</small><h2>A/B Testing Tool for Small Websites | SplitPea</h2><p>SaaS feature page</p></div><div class="score"><strong>87</strong><span>/100</span><em>Page score</em></div></section>
+          <div class="copy">Today we're announcing a calmer way to review brand voice. <span class="flagged">This sentence needs attention because it sounds generic and templated.</span></div>
+        </article>
+
+        <article class="sample archivo">
+          <div class="sample-label">Archivo <span>stronger personality, utility feel</span></div>
+          <div class="topbar"><div class="brand"><span class="mark"></span>Revisi</div><div class="status"><span>Auditing</span><strong>splitpea.co</strong><span>Last scan 17 May 2026</span></div><div class="menu"><span class="dots"></span></div></div>
+          <section class="summary"><p>Mostly strong, with clear revision targets. <strong>6 of 93 sentences</strong> need attention.</p><span>The page is broadly aligned, with a few line-level edits worth reviewing.</span></section>
+          <section class="document-head"><div><small>splitpea.co</small><h2>A/B Testing Tool for Small Websites | SplitPea</h2><p>SaaS feature page</p></div><div class="score"><strong>87</strong><span>/100</span><em>Page score</em></div></section>
+          <div class="copy">Today we're announcing a calmer way to review brand voice. <span class="flagged">This sentence needs attention because it sounds generic and templated.</span></div>
+        </article>
+
+        <article class="sample work">
+          <div class="sample-label">Work Sans <span>warm, rounder, practical</span></div>
+          <div class="topbar"><div class="brand"><span class="mark"></span>Revisi</div><div class="status"><span>Auditing</span><strong>splitpea.co</strong><span>Last scan 17 May 2026</span></div><div class="menu"><span class="dots"></span></div></div>
+          <section class="summary"><p>Mostly strong, with clear revision targets. <strong>6 of 93 sentences</strong> need attention.</p><span>The page is broadly aligned, with a few line-level edits worth reviewing.</span></section>
+          <section class="document-head"><div><small>splitpea.co</small><h2>A/B Testing Tool for Small Websites | SplitPea</h2><p>SaaS feature page</p></div><div class="score"><strong>87</strong><span>/100</span><em>Page score</em></div></section>
+          <div class="copy">Today we're announcing a calmer way to review brand voice. <span class="flagged">This sentence needs attention because it sounds generic and templated.</span></div>
+        </article>
+
+        <article class="sample figtree">
+          <div class="sample-label">Figtree <span>modern SaaS, softer than Inter</span></div>
+          <div class="topbar"><div class="brand"><span class="mark"></span>Revisi</div><div class="status"><span>Auditing</span><strong>splitpea.co</strong><span>Last scan 17 May 2026</span></div><div class="menu"><span class="dots"></span></div></div>
+          <section class="summary"><p>Mostly strong, with clear revision targets. <strong>6 of 93 sentences</strong> need attention.</p><span>The page is broadly aligned, with a few line-level edits worth reviewing.</span></section>
+          <section class="document-head"><div><small>splitpea.co</small><h2>A/B Testing Tool for Small Websites | SplitPea</h2><p>SaaS feature page</p></div><div class="score"><strong>87</strong><span>/100</span><em>Page score</em></div></section>
+          <div class="copy">Today we're announcing a calmer way to review brand voice. <span class="flagged">This sentence needs attention because it sounds generic and templated.</span></div>
+        </article>
+
+        <article class="sample geist">
+          <div class="sample-label">Geist <span>crisp, technical, product-like</span></div>
+          <div class="topbar"><div class="brand"><span class="mark"></span>Revisi</div><div class="status"><span>Auditing</span><strong>splitpea.co</strong><span>Last scan 17 May 2026</span></div><div class="menu"><span class="dots"></span></div></div>
+          <section class="summary"><p>Mostly strong, with clear revision targets. <strong>6 of 93 sentences</strong> need attention.</p><span>The page is broadly aligned, with a few line-level edits worth reviewing.</span></section>
+          <section class="document-head"><div><small>splitpea.co</small><h2>A/B Testing Tool for Small Websites | SplitPea</h2><p>SaaS feature page</p></div><div class="score"><strong>87</strong><span>/100</span><em>Page score</em></div></section>
+          <div class="copy">Today we're announcing a calmer way to review brand voice. <span class="flagged">This sentence needs attention because it sounds generic and templated.</span></div>
+        </article>
+
+        <article class="sample noto">
+          <div class="sample-label">Noto Sans <span>neutral, global, low personality</span></div>
+          <div class="topbar"><div class="brand"><span class="mark"></span>Revisi</div><div class="status"><span>Auditing</span><strong>splitpea.co</strong><span>Last scan 17 May 2026</span></div><div class="menu"><span class="dots"></span></div></div>
+          <section class="summary"><p>Mostly strong, with clear revision targets. <strong>6 of 93 sentences</strong> need attention.</p><span>The page is broadly aligned, with a few line-level edits worth reviewing.</span></section>
+          <section class="document-head"><div><small>splitpea.co</small><h2>A/B Testing Tool for Small Websites | SplitPea</h2><p>SaaS feature page</p></div><div class="score"><strong>87</strong><span>/100</span><em>Page score</em></div></section>
+          <div class="copy">Today we're announcing a calmer way to review brand voice. <span class="flagged">This sentence needs attention because it sounds generic and templated.</span></div>
+        </article>
+
+        <article class="sample recursive">
+          <div class="sample-label">Recursive Sans <span>distinctive, technical, more character</span></div>
+          <div class="topbar"><div class="brand"><span class="mark"></span>Revisi</div><div class="status"><span>Auditing</span><strong>splitpea.co</strong><span>Last scan 17 May 2026</span></div><div class="menu"><span class="dots"></span></div></div>
+          <section class="summary"><p>Mostly strong, with clear revision targets. <strong>6 of 93 sentences</strong> need attention.</p><span>The page is broadly aligned, with a few line-level edits worth reviewing.</span></section>
+          <section class="document-head"><div><small>splitpea.co</small><h2>A/B Testing Tool for Small Websites | SplitPea</h2><p>SaaS feature page</p></div><div class="score"><strong>87</strong><span>/100</span><em>Page score</em></div></section>
+          <div class="copy">Today we're announcing a calmer way to review brand voice. <span class="flagged">This sentence needs attention because it sounds generic and templated.</span></div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
