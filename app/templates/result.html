@@ -14,8 +14,7 @@
   <span class="sr-only">Revisi Brand Audit Report</span>
   <header class="audit-topbar">
     <a class="audit-brand" href="/" aria-label="Revisi home">
-      <span class="audit-mark" aria-hidden="true"></span>
-      <span>Revisi</span>
+      <img src="{{ url_for('static', path='/revisi-wordmark.svg') }}" alt="Revisi" width="103" height="40">
     </a>
     <div class="audit-status">
       <span>Auditing</span>
@@ -203,7 +202,7 @@
       <section class="scorecard-metric">
         <div class="metric-title">
           <strong>{{ metric.label }}</strong>
-          <span>{% if metric.value >= 75 %}On-brand{% elif metric.value >= 60 %}Watch{% else %}Off-brand{% endif %}</span>
+          <span class="{% if metric.value >= 75 %}is-good{% elif metric.value >= 60 %}is-watch{% else %}is-bad{% endif %}">{% if metric.value >= 75 %}On-brand{% elif metric.value >= 60 %}Watch{% else %}Off-brand{% endif %}</span>
         </div>
         <div class="metric-bar {% if metric.value < 60 %}bad{% elif metric.value < 75 %}warn{% endif %}">
           <span style="width: {{ metric.value }}%"></span>
