@@ -11,6 +11,12 @@
     });
   });
 
+  const tickerTrack = document.getElementById("ticker-track");
+  if (tickerTrack && !tickerTrack.dataset.duplicated) {
+    tickerTrack.innerHTML += tickerTrack.innerHTML;
+    tickerTrack.dataset.duplicated = "true";
+  }
+
   document.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-copy]");
     if (!button) return;
