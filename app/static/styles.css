@@ -2346,7 +2346,7 @@ button:disabled {
 
 .page-row.is-selected {
   background: #f6f3ea;
-  box-shadow: inset 4px 0 0 #15140f;
+  box-shadow: inset 4px 0 0 var(--accent);
 }
 
 .page-dot {
@@ -4670,7 +4670,6 @@ button:disabled {
 
 .page-row.is-selected {
   margin:0;
-  border-left: 2px solid var(--accent);
   padding-right: 14px;
   padding-left: 14px;
   background: transparent;
