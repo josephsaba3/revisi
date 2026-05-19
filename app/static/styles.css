@@ -4520,7 +4520,7 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  border-left: 1px solid var(--line);
+  border:0;
   padding: 0 20px;
 }
 
