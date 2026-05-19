@@ -18,6 +18,9 @@ def analyze_page(page: ExtractedPage, brand_voice: str | None) -> AuditResult:
     settings = get_settings()
     if not settings.openai_api_key:
         return _local_draft_result(page, brand_voice)
+    analysis_prompt = (settings.openai_analysis_prompt or "").strip()
+    if not analysis_prompt:
+        raise RuntimeError("OPENAI_ANALYSIS_PROMPT must be set when OPENAI_API_KEY is configured.")
 
     client = OpenAI(api_key=settings.openai_api_key)
     payload = _analysis_payload(page, brand_voice)
@@ -29,11 +32,7 @@ def analyze_page(page: ExtractedPage, brand_voice: str | None) -> AuditResult:
             input=[
                 {
                     "role": "system",
-                    "content": (
-                        "You are a brand voice and clarity auditor. Return only structured data. "
-                        "Use only the supplied evidence lines, preserve source claims, never invent proof, "
-                        "and label inferred voice carefully."
-                    ),
+                    "content": analysis_prompt,
                 },
                 {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
             ],

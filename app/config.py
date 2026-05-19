@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     openai_model: str = "gpt-5.5"
     openai_reasoning_effort: Literal["minimal", "low", "medium", "high"] = "low"
+    openai_analysis_prompt: str | None = None
     request_timeout_seconds: float = 15.0
     scan_rate_limit_count: int = 5
     scan_rate_limit_window_seconds: int = 600

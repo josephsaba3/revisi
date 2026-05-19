@@ -33,6 +33,7 @@ def test_local_analyzer_returns_valid_audit_without_key(monkeypatch) -> None:
 
 def test_analyzer_labels_openai_quota_fallback(monkeypatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_ANALYSIS_PROMPT", "Private audit prompt")
     get_settings.cache_clear()
 
     class FakeResponses:
@@ -66,11 +67,13 @@ def test_analyzer_labels_openai_quota_fallback(monkeypatch) -> None:
     assert result.overall_score <= 100
 
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_ANALYSIS_PROMPT", raising=False)
     get_settings.cache_clear()
 
 
 def test_analyzer_normalizes_explanatory_scoring_context(monkeypatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_ANALYSIS_PROMPT", "Private audit prompt")
     get_settings.cache_clear()
 
     parsed_result = AuditResult(
@@ -125,6 +128,7 @@ def test_analyzer_normalizes_explanatory_scoring_context(monkeypatch) -> None:
     assert result.overall_score <= 100
 
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_ANALYSIS_PROMPT", raising=False)
     get_settings.cache_clear()
 
 
@@ -132,6 +136,7 @@ def test_analyzer_uses_low_reasoning_and_drops_ungrounded_output(monkeypatch) ->
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("OPENAI_MODEL", "gpt-5.5")
     monkeypatch.setenv("OPENAI_REASONING_EFFORT", "low")
+    monkeypatch.setenv("OPENAI_ANALYSIS_PROMPT", "Use the private prompt from env.")
     get_settings.cache_clear()
     call_kwargs = {}
 
@@ -216,6 +221,7 @@ def test_analyzer_uses_low_reasoning_and_drops_ungrounded_output(monkeypatch) ->
 
     assert call_kwargs["reasoning"] == {"effort": "low"}
     assert call_kwargs["model"] == "gpt-5.5"
+    assert call_kwargs["input"][0]["content"] == "Use the private prompt from env."
     assert result.verdict == "Strong, with clear revision targets"
     assert [issue.original_copy for issue in result.top_issues] == ["Useful page copy."]
     assert result.top_issues[0].line_id == "L001"
@@ -225,4 +231,30 @@ def test_analyzer_uses_low_reasoning_and_drops_ungrounded_output(monkeypatch) ->
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_MODEL", raising=False)
     monkeypatch.delenv("OPENAI_REASONING_EFFORT", raising=False)
+    monkeypatch.delenv("OPENAI_ANALYSIS_PROMPT", raising=False)
     get_settings.cache_clear()
+
+
+def test_openai_prompt_is_required_with_api_key(monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.delenv("OPENAI_ANALYSIS_PROMPT", raising=False)
+    get_settings.cache_clear()
+
+    page = ExtractedPage(
+        url="https://example.com",
+        title="Example",
+        meta_description="A useful description",
+        headings=["Heading"],
+        ctas=["Run the audit"],
+        lines=[ExtractedLine(line_id="L001", source="P", text="Useful page copy.")],
+    )
+
+    try:
+        analyze_page(page, None)
+    except RuntimeError as exc:
+        assert "OPENAI_ANALYSIS_PROMPT" in str(exc)
+    else:
+        raise AssertionError("Expected OPENAI_ANALYSIS_PROMPT to be required")
+    finally:
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        get_settings.cache_clear()
