@@ -4600,9 +4600,8 @@ button:disabled {
 }
 
 .page-list-head span {
-  color: var(--muted);
+  color: var(--paper);
   font-family: var(--mono);
-  font-size: 12px;
 }
 
 .pages-toggle,
@@ -4670,8 +4669,7 @@ button:disabled {
 }
 
 .page-row.is-selected {
-  margin-right: 14px;
-  margin-left: 14px;
+  margin:0;
   border-left: 2px solid var(--accent);
   padding-right: 14px;
   padding-left: 14px;
