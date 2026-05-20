@@ -12,3 +12,4 @@ node_modules/
 dist/
 brand-voice-auditor.code-workspace
 SKILL.md
+.agents

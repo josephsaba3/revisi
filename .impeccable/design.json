@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-20T00:00:00+10:00",
+  "title": "Design System: Revisi",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink Black",
+        "canonical": "#171a16",
+        "tonalRamp": ["#0b0c0a", "#171a16", "#2a2e28", "#444a40", "#636b5d", "#858d7e", "#aab1a4", "#d9ddd4"]
+      },
+      "warm-cream": {
+        "role": "neutral",
+        "displayName": "Warm Cream",
+        "canonical": "#fbf8ee",
+        "tonalRamp": ["#221f18", "#4a4232", "#746951", "#9e9275", "#c5b999", "#ded4c2", "#f4efe3", "#fbf8ee"]
+      },
+      "editorial-pink": {
+        "role": "primary",
+        "displayName": "Editorial Pink",
+        "canonical": "#ff2d6f",
+        "tonalRamp": ["#3b0017", "#71002d", "#a90045", "#d7005b", "#ff2d6f", "#ff6f9a", "#ffacc5", "#ffe3ec"]
+      },
+      "pea": {
+        "role": "secondary",
+        "displayName": "Pea Green",
+        "canonical": "#416c38",
+        "tonalRamp": ["#0d1d0a", "#1d3318", "#2d4f29", "#416c38", "#5e8a52", "#83aa79", "#b3ceb0", "#e0edde"]
+      },
+      "brick": {
+        "role": "tertiary",
+        "displayName": "Brick Review",
+        "canonical": "#944226",
+        "tonalRamp": ["#2a0c04", "#4b1d0d", "#6e2e18", "#944226", "#bd6544", "#dc9075", "#efbfaf", "#f9e4dc"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero statements, major CTAs, and unmistakable scores."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Reading copy, diagnostic explanation, and report content."
+      },
+      "label": {
+        "displayName": "Audit Label",
+        "purpose": "Metadata, status, page type, and compact UI labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "ambient-low",
+        "value": "0 12px 38px rgb(65 51 31 / 5%)",
+        "purpose": "Light lift for active drop areas, selected cards, and quiet hover state."
+      },
+      {
+        "name": "ambient-mid",
+        "value": "0 16px 48px rgb(65 51 31 / 10%)",
+        "purpose": "Rare emphasis for active or foregrounded controls."
+      }
+    ],
+    "motion": [
+      {
+        "name": "quick-state",
+        "value": "150ms ease-out",
+        "purpose": "Small hover, focus, and border-color transitions."
+      },
+      {
+        "name": "progress",
+        "value": "400ms ease-out",
+        "purpose": "Progress bars and scan-state changes."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "desktop-collapse",
+        "value": "1240px"
+      },
+      {
+        "name": "tablet",
+        "value": "840px"
+      },
+      {
+        "name": "mobile",
+        "value": "760px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary CTA",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "High-value marketing or scan action. Pink should feel decisive, not decorative.",
+      "html": "<button class=\"ds-btn-primary\">Run the audit</button>",
+      "css": ".ds-btn-primary{background:#ff2d6f;color:#fffdf7;border:1px solid #ff2d6f;border-radius:8px;padding:12px 18px;font-family:IBM Plex Sans,system-ui,sans-serif;font-size:14px;font-weight:700;letter-spacing:0;transition:background 150ms ease-out,transform 150ms ease-out,border-color 150ms ease-out}.ds-btn-primary:hover{background:#171a16;border-color:#171a16;transform:translateY(-1px)}.ds-btn-primary:focus-visible{outline:3px solid rgba(255,45,111,.28);outline-offset:2px}"
+    },
+    {
+      "name": "Utility Button",
+      "kind": "button",
+      "refersTo": "button-utility",
+      "description": "Dense report action such as export, share, or panel toggle.",
+      "html": "<button class=\"ds-btn-utility\">Export PDF</button>",
+      "css": ".ds-btn-utility{background:#171a16;color:#fffdf7;border:1px solid #171a16;border-radius:8px;padding:10px 14px;font-family:IBM Plex Sans,system-ui,sans-serif;font-size:13px;font-weight:700;letter-spacing:0;transition:background 150ms ease-out,border-color 150ms ease-out}.ds-btn-utility:hover{background:#416c38;border-color:#416c38}.ds-btn-utility:focus-visible{outline:3px solid rgba(65,108,56,.22);outline-offset:2px}"
+    },
+    {
+      "name": "URL Input",
+      "kind": "input",
+      "refersTo": "input-url",
+      "description": "Primary scan field with calm paper styling and clear focus state.",
+      "html": "<label class=\"ds-url-label\"><span>https://</span><input class=\"ds-url-input\" value=\"yourcompany.com\"></label>",
+      "css": ".ds-url-label{display:flex;align-items:center;border:1px solid #ded4c2;border-radius:8px;background:#fffdf7;overflow:hidden;font-family:IBM Plex Sans,system-ui,sans-serif}.ds-url-label span{padding:16px 12px;color:#928b7b;border-right:1px solid #ded4c2;font-family:JetBrains Mono,ui-monospace,monospace;font-size:12px}.ds-url-input{min-width:240px;border:0;background:transparent;color:#171a16;padding:16px 18px;font:inherit;outline:0}.ds-url-label:focus-within{border-color:#416c38;box-shadow:0 0 0 3px rgba(65,108,56,.15)}"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "chip-status",
+      "description": "Small status label for on-brand, watch, or flagged states.",
+      "html": "<span class=\"ds-chip-status\">On-brand</span>",
+      "css": ".ds-chip-status{display:inline-flex;align-items:center;border-radius:999px;background:#daf8e1;color:#08752e;padding:5px 9px;font-family:IBM Plex Sans,system-ui,sans-serif;font-size:12px;font-weight:600;letter-spacing:0}.ds-chip-status:focus-visible{outline:3px solid rgba(65,108,56,.22);outline-offset:2px}"
+    },
+    {
+      "name": "Report Panel",
+      "kind": "card",
+      "refersTo": "report-panel",
+      "description": "Flat report surface organized by borders rather than decorative shadows.",
+      "html": "<section class=\"ds-report-panel\"><h3>Voice scorecard</h3><p>Page-wide metrics for the selected page.</p></section>",
+      "css": ".ds-report-panel{background:#fbf8ee;color:#171a16;border:1px solid #ded4c2;border-radius:8px;padding:28px;font-family:IBM Plex Sans,system-ui,sans-serif}.ds-report-panel h3{margin:0 0 8px;font-size:24px;line-height:1.15}.ds-report-panel p{margin:0;color:#67675f;font-size:15px;line-height:1.45}"
+    },
+    {
+      "name": "Finding Highlight",
+      "kind": "custom",
+      "refersTo": "finding-highlight",
+      "description": "Inline sentence mark for copy that needs review.",
+      "html": "<button class=\"ds-finding\"><span>01</span>Test a change. See what happens.</button>",
+      "css": ".ds-finding{display:inline-flex;align-items:center;gap:14px;border:0;border-left:2px solid #ff2d6f;background:#ffe5ee;color:#171a16;padding:11px 14px;font-family:IBM Plex Sans,system-ui,sans-serif;font-size:18px;line-height:1.25;text-align:left}.ds-finding span{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:999px;background:#ff2d6f;color:#fffdf7;font-size:11px;font-weight:800}.ds-finding:hover{background:#ffd5e3}.ds-finding:focus-visible{outline:3px solid rgba(255,45,111,.28);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Copy Desk Console",
+    "overview": "Revisi is a focused editorial workspace for making brand voice inspectable. The design should balance expressive marketing with a calm, structured report UI that helps users scan, diagnose, revise, and rescore.",
+    "keyCharacteristics": ["Editorial, not decorative.", "Sparse controls, high signal.", "Pink is an annotation color.", "Borders create structure before shadows do.", "Report reading flow comes first."],
+    "rules": [
+      {
+        "name": "The Annotation Rule",
+        "body": "Pink means editorial attention. Use it for flags, squiggles, highlights, and high-value CTAs.",
+        "section": "colors"
+      },
+      {
+        "name": "The Reading First Rule",
+        "body": "Report copy must beat visual drama. Do not compress findings or rewrites just to preserve a layout.",
+        "section": "typography"
+      },
+      {
+        "name": "The Grid Before Shadow Rule",
+        "body": "Reach for a divider, border, or surface change before adding a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": ["Do keep Revisi niche and sharp.", "Do use pink for editorial attention.", "Do let borders and grid lines organize report surfaces.", "Do preserve generous reading space.", "Do support WCAG 2.2 AA and non-color status cues."],
+    "donts": ["Don't make the product feel like generic AI SaaS.", "Don't copy Grammarly's broad writing-assistant shape.", "Don't make the report busy, dense, or enterprise-heavy.", "Don't turn the brand into a playful copywriting toy.", "Don't use gradient text, glass cards, side-stripe card accents, or repeated identical icon-card grids."]
+  }
+}
