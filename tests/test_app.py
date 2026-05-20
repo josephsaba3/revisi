@@ -26,6 +26,38 @@ def test_homepage_renders() -> None:
 
     assert response.status_code == 200
     assert "Run the audit" in response.text
+    assert '<meta name="description" content="Revisi is a brand voice auditor and website copy audit tool' in response.text
+    assert '<meta name="robots" content="index, follow">' in response.text
+    assert '<link rel="canonical" href="http://testserver/">' in response.text
+    assert '<meta property="og:title" content="Revisi - Brand voice auditor for your website">' in response.text
+    assert '<meta property="og:url" content="http://testserver/">' in response.text
+    assert '<meta name="twitter:card" content="summary">' in response.text
+
+
+def test_robots_txt_blocks_private_scan_surfaces() -> None:
+    client = TestClient(app)
+    response = client.get("/robots.txt")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert "User-agent: *" in response.text
+    assert "Allow: /" in response.text
+    assert "Disallow: /scan" in response.text
+    assert "Disallow: /scan-sync" in response.text
+    assert "Disallow: /scan/progress/" in response.text
+    assert "Disallow: /r/" in response.text
+    assert "Sitemap: http://testserver/sitemap.xml" in response.text
+
+
+def test_sitemap_xml_lists_homepage_only() -> None:
+    client = TestClient(app)
+    response = client.get("/sitemap.xml")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/xml")
+    assert "<loc>http://testserver/</loc>" in response.text
+    assert "/scan" not in response.text
+    assert "/r/" not in response.text
 
 
 def test_save_scan_persists_page_result(db_session) -> None:
@@ -184,6 +216,8 @@ def test_result_page_renders(db_session) -> None:
 
     assert response.status_code == 200
     assert "Revisi Brand Audit Report" in response.text
+    assert "<title>Revisi Audit Report</title>" in response.text
+    assert '<meta name="robots" content="noindex, nofollow">' in response.text
     assert "Export PDF" in response.text
     assert "Share" in response.text
     assert "Lower-confidence result" in response.text

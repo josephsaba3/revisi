@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 import asyncio
+from html import escape
 import logging
 import xml.etree.ElementTree as ET
 from urllib import robotparser
@@ -10,7 +11,7 @@ from uuid import uuid4
 from bs4 import BeautifulSoup
 import httpx
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -26,6 +27,11 @@ from .services.phrase_flags import find_phrase_flags
 
 logger = logging.getLogger(__name__)
 CRAWLER_USER_AGENT = "BrandVoiceAuditor/0.1"
+DEFAULT_SEO_TITLE = "Revisi - Brand voice auditor for your website"
+DEFAULT_SEO_DESCRIPTION = (
+    "Revisi is a brand voice auditor and website copy audit tool for marketers, founders, "
+    "and agencies who need clearer, more on-brand website copy."
+)
 _scan_attempts: dict[str, list[float]] = {}
 _scan_jobs: dict[str, dict] = {}
 _scan_job_ttl_seconds = 1800
@@ -57,7 +63,43 @@ templates = Jinja2Templates(directory="app/templates")
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request, "index.html", {})
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {"seo": _seo_context(request)},
+    )
+
+
+@app.get("/robots.txt", response_class=PlainTextResponse)
+def robots_txt(request: Request) -> PlainTextResponse:
+    sitemap_url = _absolute_url(request, "/sitemap.xml")
+    body = "\n".join(
+        [
+            "User-agent: *",
+            "Allow: /",
+            "Disallow: /scan",
+            "Disallow: /scan-sync",
+            "Disallow: /scan/progress/",
+            "Disallow: /r/",
+            f"Sitemap: {sitemap_url}",
+            "",
+        ]
+    )
+    return PlainTextResponse(body, media_type="text/plain")
+
+
+@app.get("/sitemap.xml")
+def sitemap_xml(request: Request) -> Response:
+    home_url = escape(_absolute_url(request, "/"), quote=True)
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        "  <url>\n"
+        f"    <loc>{home_url}</loc>\n"
+        "  </url>\n"
+        "</urlset>\n"
+    )
+    return Response(body, media_type="application/xml")
 
 
 @app.post("/scan")
@@ -103,6 +145,7 @@ async def scan_sync(
             request,
             "index.html",
             {
+                "seo": _seo_context(request),
                 "error": "Too many scans from this connection. Try again soon.",
                 "url": url,
                 "brand_voice": brand_voice,
@@ -117,7 +160,7 @@ async def scan_sync(
         return templates.TemplateResponse(
             request,
             "index.html",
-            {"error": str(exc), "url": url, "brand_voice": brand_voice},
+            {"seo": _seo_context(request), "error": str(exc), "url": url, "brand_voice": brand_voice},
             status_code=400,
         )
     except Exception as exc:
@@ -127,6 +170,7 @@ async def scan_sync(
             "index.html",
             {
                 "error": "The scan failed unexpectedly. Check the deployment logs for the Python traceback.",
+                "seo": _seo_context(request),
                 "url": url,
                 "brand_voice": brand_voice,
             },
@@ -136,7 +180,8 @@ async def scan_sync(
     return templates.TemplateResponse(
         request,
         "result.html",
-        _result_template_context(scan_model),
+        _result_template_context(scan_model)
+        | {"seo": _seo_context(request, title="Revisi Audit Report", robots="noindex, nofollow")},
     )
 
 
@@ -148,8 +193,40 @@ def result(request: Request, public_token: str, page_id: int | None = None, db: 
     return templates.TemplateResponse(
         request,
         "result.html",
-        _result_template_context(scan_model, page_id=page_id),
+        _result_template_context(scan_model, page_id=page_id)
+        | {"seo": _seo_context(request, title="Revisi Audit Report", robots="noindex, nofollow")},
     )
+
+
+def _public_site_url(request: Request) -> str:
+    configured_url = get_settings().public_site_url
+    if configured_url:
+        return configured_url.rstrip("/")
+    return f"{request.url.scheme}://{request.url.netloc}".rstrip("/")
+
+
+def _absolute_url(request: Request, path: str = "/") -> str:
+    normalized_path = path if path.startswith("/") else f"/{path}"
+    return f"{_public_site_url(request)}{normalized_path}"
+
+
+def _seo_context(
+    request: Request,
+    *,
+    title: str = DEFAULT_SEO_TITLE,
+    description: str = DEFAULT_SEO_DESCRIPTION,
+    path: str | None = "/",
+    robots: str = "index, follow",
+    og_type: str = "website",
+) -> dict[str, str]:
+    canonical_path = request.url.path if path is None else path
+    return {
+        "title": title,
+        "description": description,
+        "robots": robots,
+        "canonical_url": _absolute_url(request, canonical_path),
+        "og_type": og_type,
+    }
 
 
 def _client_rate_limit_key(request: Request) -> str:

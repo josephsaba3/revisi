@@ -4395,6 +4395,7 @@ button:disabled {
   border: 1px solid var(--line-2);
   background: var(--paper);
   color: var(--ink);
+  padding: 28px 32px 0;
   box-shadow: none;
 }
 
@@ -4408,9 +4409,26 @@ button:disabled {
   font-family: var(--sans);
 }
 
+.marketing-root .loader-card .log {
+  color: var(--ink-soft);
+}
+
 .marketing-root .loader-card .log .row,
 .marketing-root .loader-card .progress {
   border-color: var(--line);
+}
+
+.marketing-root .loader-card .log .row {
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+}
+
+.marketing-root .loader-card .log .row.done {
+  color: var(--muted);
+}
+
+.marketing-root .loader-card .log .row.on {
+  color: var(--ink);
+  font-weight: 600;
 }
 
 .marketing-root .loader-card .bar {

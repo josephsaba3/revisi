@@ -3,7 +3,18 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Brand Voice Auditor{% endblock %}</title>
+    <title>{% block title %}{{ seo.title|default("Revisi - Brand voice auditor for your website") }}{% endblock %}</title>
+    <meta name="description" content="{{ seo.description|default('Revisi is a brand voice auditor and website copy audit tool for marketers, founders, and agencies who need clearer, more on-brand website copy.') }}">
+    <meta name="robots" content="{{ seo.robots|default('index, follow') }}">
+    <link rel="canonical" href="{{ seo.canonical_url }}">
+    <meta property="og:site_name" content="Revisi">
+    <meta property="og:type" content="{{ seo.og_type|default('website') }}">
+    <meta property="og:title" content="{{ seo.title|default('Revisi - Brand voice auditor for your website') }}">
+    <meta property="og:description" content="{{ seo.description|default('Revisi is a brand voice auditor and website copy audit tool for marketers, founders, and agencies who need clearer, more on-brand website copy.') }}">
+    <meta property="og:url" content="{{ seo.canonical_url }}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ seo.title|default('Revisi - Brand voice auditor for your website') }}">
+    <meta name="twitter:description" content="{{ seo.description|default('Revisi is a brand voice auditor and website copy audit tool for marketers, founders, and agencies who need clearer, more on-brand website copy.') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">

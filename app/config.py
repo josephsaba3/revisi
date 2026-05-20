@@ -7,6 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "Brand Voice Auditor"
+    public_site_url: str | None = None
     database_url: str = "sqlite:///./brand_voice_auditor.db"
     openai_api_key: str | None = None
     openai_model: str = "gpt-5.5"

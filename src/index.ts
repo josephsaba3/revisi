@@ -8,7 +8,8 @@ export class BrandVoiceAuditorContainer extends Container {
   envVars = {
     OPENAI_API_KEY: env.OPENAI_API_KEY,
     DATABASE_URL: env.DATABASE_URL,
-    OPENAI_MODEL: env.OPENAI_MODEL || "gpt-5.1-mini"
+    OPENAI_MODEL: env.OPENAI_MODEL || "gpt-5.1-mini",
+    PUBLIC_SITE_URL: env.PUBLIC_SITE_URL
   };
 }
 
