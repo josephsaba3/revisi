@@ -172,13 +172,16 @@
   let theatricalStartedAt = null;
   let pendingReportUrl = null;
   let redirectTimer = null;
-  const theatricalStepDurations = {
-    validate: 1200,
-    guide: 1100,
-    fetch: 1400,
-    extract: 1400,
-    phrases: 1200,
-    brief: 1100,
+  let theatricalStepDurations = {};
+  const randomTheatricalStepKeys = new Set([
+    "validate",
+    "guide",
+    "fetch",
+    "extract",
+    "phrases",
+    "brief",
+  ]);
+  const fixedTheatricalStepDurations = {
     ground: 1000,
     score: 1100,
     save: 3000,
@@ -345,6 +348,7 @@
     loader.classList.add("on");
     loader.setAttribute("aria-hidden", "false");
     theatricalStartedAt = performance.now();
+    theatricalStepDurations = createTheatricalStepDurations();
     pendingReportUrl = null;
     if (redirectTimer) window.clearTimeout(redirectTimer);
     clearLoaderError();
@@ -453,9 +457,32 @@
       return {
         ...step,
         status,
-        elapsed_seconds: index < activeIndex ? Math.max(1, Math.round((theatricalStepDurations[step.key] ?? 1200) / 1000)) : step.elapsed_seconds,
+        elapsed_seconds: index < activeIndex ? theatricalElapsedSeconds(step) : step.elapsed_seconds,
       };
     });
+  }
+
+  function createTheatricalStepDurations() {
+    const durations = { ...fixedTheatricalStepDurations };
+    const keys = Array.from(randomTheatricalStepKeys);
+    const seconds = keys.map(() => randomWholeSeconds(1, 3));
+    if (seconds.every((value) => value === seconds[0])) {
+      const index = randomWholeSeconds(0, seconds.length - 1);
+      seconds[index] = seconds[index] === 3 ? 2 : seconds[index] + 1;
+    }
+    keys.forEach((key, index) => {
+      durations[key] = seconds[index] * 1000;
+    });
+    return durations;
+  }
+
+  function randomWholeSeconds(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function theatricalElapsedSeconds(step) {
+    if (!randomTheatricalStepKeys.has(step.key)) return step.elapsed_seconds;
+    return Math.max(1, Math.round((theatricalStepDurations[step.key] ?? 1000) / 1000));
   }
 
   function theaterIsComplete(data) {
