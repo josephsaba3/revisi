@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>JS Render Test Page</title>
+    <meta name="description" content="A test page that injects audit copy with JavaScript.">
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        color: #17201b;
+        background: #f7f4ec;
+      }
+
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 64px 24px;
+      }
+
+      h1 {
+        font-size: 42px;
+        line-height: 1.05;
+        margin: 0 0 18px;
+      }
+
+      h2 {
+        margin-top: 40px;
+      }
+
+      p,
+      li {
+        font-size: 18px;
+        line-height: 1.6;
+      }
+
+      a,
+      button {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #17201b;
+        border-radius: 6px;
+        padding: 12px 16px;
+        margin-right: 8px;
+        color: #17201b;
+        background: transparent;
+        font: inherit;
+        text-decoration: none;
+      }
+
+      button {
+        background: #c9e86a;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <h1></h1>
+      <p></p>
+    </div>
+
+    <script>
+      window.setTimeout(() => {
+        document.getElementById("root").innerHTML = `
+          <main>
+            <h1>Launch copy that sounds like your team wrote it</h1>
+            <p>Revisi helps small marketing teams find vague claims, generic phrasing, and trust gaps before a page goes live.</p>
+
+            <h2>What the audit checks</h2>
+            <p>The scanner reviews brand fit, audience fit, clarity, human sound, specificity, trust, and distinctiveness across every meaningful line of page copy.</p>
+            <p>Instead of giving broad writing advice, it points to the exact sentence that needs work and suggests a sharper rewrite.</p>
+
+            <h2>Who uses it</h2>
+            <ul>
+              <li>Founders tightening a landing page before launch.</li>
+              <li>Agencies checking whether client pages match the approved voice.</li>
+              <li>Marketing teams keeping product, pricing, and FAQ pages consistent.</li>
+            </ul>
+
+            <p>Use this dummy page to confirm that raw HTTP extraction stays light while a JavaScript-aware fallback can see the rendered copy.</p>
+            <a href="#sample-report">View sample report</a>
+            <button type="button">Run the audit</button>
+          </main>
+        `;
+      }, 600);
+    </script>
+  </body>
+</html>
