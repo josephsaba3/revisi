@@ -350,6 +350,115 @@ def test_perform_scan_updates_real_progress(monkeypatch, db_session) -> None:
         _scan_jobs.clear()
 
 
+def test_perform_scan_uses_firecrawl_for_thin_primary_copy(monkeypatch, db_session) -> None:
+    monkeypatch.setenv("FIRECRAWL_API_KEY", "fc-test")
+    get_settings.cache_clear()
+
+    async def fake_fetch_html(_url: str) -> str:
+        return "<div id=\"root\"><h1>Hi</h1></div>"
+
+    async def fake_fetch_firecrawl_html(_url: str) -> str:
+        return """
+            <main>
+              <h1>Rendered positioning copy</h1>
+              <p>This rendered page explains the product, the buyer, the workflow, and the reason to trust it.</p>
+              <p>Teams use it to find vague claims, replace generic language, and keep launch pages on voice.</p>
+            </main>
+        """
+
+    def fake_analyze_page(page, _brand_voice):
+        assert "Rendered positioning copy" in page.combined_text
+        assert "Teams use it" in page.combined_text
+        return AuditResult(
+            overall_score=78,
+            verdict="Strong, with clear revision targets",
+            scoring_context="General brand copy",
+            contextual_modifiers=["Message Hierarchy"],
+            scores=Scorecard(
+                brand_fit=80,
+                audience_fit=80,
+                clarity=80,
+                human_sound=80,
+                specificity=70,
+                trust=75,
+                distinctiveness=70,
+            ),
+            ai_sludge_risk=20,
+            top_issues=[],
+            line_level_rewrites=[],
+            voice_summary=["Plain and direct"],
+            recommended_next_action="Tighten the proof.",
+        )
+
+    monkeypatch.setattr(main, "fetch_html", fake_fetch_html)
+    monkeypatch.setattr(main, "fetch_firecrawl_html", fake_fetch_firecrawl_html)
+    monkeypatch.setattr(main, "analyze_page", fake_analyze_page)
+    monkeypatch.setattr(main, "_fetch_robots_rules", lambda _url: main.asyncio.sleep(0, result=_allow_all_robots()))
+
+    try:
+        scan = main.asyncio.run(_perform_scan("example.com", "scan", "", "", db_session))
+
+        assert "Rendered positioning copy" in scan.page_result.extracted_copy[0]["text"]
+    finally:
+        monkeypatch.delenv("FIRECRAWL_API_KEY", raising=False)
+        get_settings.cache_clear()
+
+
+def test_perform_scan_skips_firecrawl_for_enough_primary_copy(monkeypatch, db_session) -> None:
+    monkeypatch.setenv("FIRECRAWL_API_KEY", "fc-test")
+    get_settings.cache_clear()
+
+    async def fake_fetch_html(_url: str) -> str:
+        return """
+            <main>
+              <h1>Clear primary page copy</h1>
+              <p>This page has enough server-rendered copy for the primary extractor to audit without fallback.</p>
+              <p>It names the buyer, the workflow, the outcome, and the reason the offer matters today.</p>
+              <p>It also includes proof, concrete next steps, and enough language to clear the fallback threshold.</p>
+              <p>The scanner should keep this page on the fast path and avoid spending a Firecrawl credit.</p>
+              <p>This final paragraph keeps the primary extraction over the configured line and word thresholds by adding useful details about the audience, promise, evidence, workflow, comparison points, onboarding path, and next step.</p>
+            </main>
+        """
+
+    async def fake_fetch_firecrawl_html(_url: str) -> str:
+        raise AssertionError("Firecrawl should not run when primary extraction has enough copy.")
+
+    def fake_analyze_page(page, _brand_voice):
+        return AuditResult(
+            overall_score=78,
+            verdict="Strong, with clear revision targets",
+            scoring_context="General brand copy",
+            contextual_modifiers=["Message Hierarchy"],
+            scores=Scorecard(
+                brand_fit=80,
+                audience_fit=80,
+                clarity=80,
+                human_sound=80,
+                specificity=70,
+                trust=75,
+                distinctiveness=70,
+            ),
+            ai_sludge_risk=20,
+            top_issues=[],
+            line_level_rewrites=[],
+            voice_summary=["Plain and direct"],
+            recommended_next_action="Tighten the proof.",
+        )
+
+    monkeypatch.setattr(main, "fetch_html", fake_fetch_html)
+    monkeypatch.setattr(main, "fetch_firecrawl_html", fake_fetch_firecrawl_html)
+    monkeypatch.setattr(main, "analyze_page", fake_analyze_page)
+    monkeypatch.setattr(main, "_fetch_robots_rules", lambda _url: main.asyncio.sleep(0, result=_allow_all_robots()))
+
+    try:
+        scan = main.asyncio.run(_perform_scan("example.com", "scan", "", "", db_session))
+
+        assert "Clear primary page copy" in scan.page_result.extracted_copy[0]["text"]
+    finally:
+        monkeypatch.delenv("FIRECRAWL_API_KEY", raising=False)
+        get_settings.cache_clear()
+
+
 def test_perform_scan_site_depth_saves_multiple_pages(monkeypatch, db_session) -> None:
     pages = {
         "https://example.com": """

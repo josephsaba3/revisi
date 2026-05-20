@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     openai_reasoning_effort: Literal["minimal", "low", "medium", "high"] = "low"
     openai_analysis_prompt: str | None = None
     request_timeout_seconds: float = 15.0
+    firecrawl_api_key: str | None = None
+    firecrawl_fallback_enabled: bool = True
+    firecrawl_timeout_seconds: float = 25.0
+    firecrawl_max_concurrency: int = 3
+    firecrawl_min_extracted_lines: int = 6
+    firecrawl_min_extracted_words: int = 80
     scan_rate_limit_count: int = 5
     scan_rate_limit_window_seconds: int = 600
     scan_rate_limit_enabled: bool = True

@@ -19,9 +19,10 @@ from sqlalchemy.orm import Session
 from . import models
 from .config import get_settings
 from .database import SessionLocal, get_db, init_db
-from .schemas import AuditResult
+from .schemas import AuditResult, ExtractedPage
 from .services.analyzer import analyze_page
 from .services.extractor import FetchError, extract_visible_copy, fetch_html, normalize_url
+from .services.firecrawl_fallback import fetch_firecrawl_html
 from .services.phrase_flags import find_phrase_flags
 
 
@@ -293,22 +294,22 @@ async def _perform_scan(
     robots = await _fetch_robots_rules(normalized_url)
     if not _robots_can_fetch(robots, normalized_url):
         raise FetchError("That site's robots.txt does not allow Revisi to scan the submitted URL.")
-    html = await fetch_html(normalized_url)
+    html, first_page = await _fetch_extractable_page(normalized_url)
     _finish_job_step(job_id, "fetch")
 
     _start_job_step(job_id, "extract")
     page_limit = _scan_page_limit(scan_depth)
-    pages = [extract_visible_copy(html, normalized_url)]
+    pages = [first_page]
     if page_limit > 1:
         discovered_urls = await _discover_scan_urls(html, normalized_url, scan_depth, page_limit, robots)
         for page_url in discovered_urls[1:]:
             if not _robots_can_fetch(robots, page_url):
                 continue
             try:
-                page_html = await fetch_html(page_url)
+                page_html, page = await _fetch_extractable_page(page_url)
             except FetchError:
                 continue
-            pages.append(extract_visible_copy(page_html, page_url))
+            pages.append(page)
             if len(pages) >= page_limit:
                 break
     _finish_job_step(job_id, "extract")
@@ -341,6 +342,54 @@ async def _perform_scan(
     _start_job_step(job_id, "finish")
     _finish_job_step(job_id, "finish")
     return scan_model
+
+
+async def _fetch_extractable_page(url: str) -> tuple[str, ExtractedPage]:
+    primary_error: FetchError | None = None
+    try:
+        html = await fetch_html(url)
+        page = extract_visible_copy(html, url)
+        if not _should_use_firecrawl_fallback(page):
+            return html, page
+    except FetchError as exc:
+        primary_error = exc
+
+    if not _firecrawl_fallback_available():
+        if primary_error:
+            raise primary_error
+        return html, page
+
+    try:
+        rendered_html = await fetch_firecrawl_html(url)
+        rendered_page = extract_visible_copy(rendered_html, url)
+    except FetchError:
+        if primary_error:
+            raise primary_error
+        return html, page
+
+    if primary_error or _extracted_word_count(rendered_page) > _extracted_word_count(page):
+        return rendered_html, rendered_page
+    return html, page
+
+
+def _firecrawl_fallback_available() -> bool:
+    settings = get_settings()
+    return bool(settings.firecrawl_fallback_enabled and settings.firecrawl_api_key)
+
+
+def _should_use_firecrawl_fallback(page: ExtractedPage) -> bool:
+    if not _firecrawl_fallback_available():
+        return False
+
+    settings = get_settings()
+    return (
+        len(page.lines) < settings.firecrawl_min_extracted_lines
+        or _extracted_word_count(page) < settings.firecrawl_min_extracted_words
+    )
+
+
+def _extracted_word_count(page: ExtractedPage) -> int:
+    return len(page.combined_text.split())
 
 
 async def _run_scan_job(job_id: str, url: str, depth: str, brand_voice: str, uploaded_voice: str) -> None:

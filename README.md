@@ -12,6 +12,7 @@ $env:OPENAI_API_KEY="your-key"
 $env:OPENAI_MODEL="gpt-5.5"
 $env:OPENAI_REASONING_EFFORT="low"
 $env:OPENAI_ANALYSIS_PROMPT="paste-your-private-analysis-prompt"
+$env:FIRECRAWL_API_KEY="fc-your-key"  # optional JS-rendered page fallback
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -20,6 +21,8 @@ Open `http://127.0.0.1:8000`.
 If `DATABASE_URL` is not set, the app uses `sqlite:///./brand_voice_auditor.db`. Use a Postgres URL for production-like storage.
 
 Copy `.env.example` to `.env` for a local file-based setup. Keep the full audit prompt in `OPENAI_ANALYSIS_PROMPT`; it is only sent to the model and is not rendered in the report. On the VPS, set `OPENAI_REASONING_EFFORT=low` in the service environment to keep GPT-5.5 audits cheaper and faster by default.
+
+Revisi uses its fast `httpx` fetch first. If the extracted copy is very light and `FIRECRAWL_API_KEY` is set, it retries that page through Firecrawl so JavaScript-rendered websites can still be audited. Tune `FIRECRAWL_MIN_EXTRACTED_LINES`, `FIRECRAWL_MIN_EXTRACTED_WORDS`, `FIRECRAWL_TIMEOUT_SECONDS`, and `FIRECRAWL_MAX_CONCURRENCY` in `.env` if needed.
 
 ## Test
 
