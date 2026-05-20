@@ -11,3 +11,4 @@ node_modules/
 .wrangler/
 dist/
 brand-voice-auditor.code-workspace
+SKILL.md
