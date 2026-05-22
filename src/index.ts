@@ -15,6 +15,8 @@ export class BrandVoiceAuditorContainer extends Container {
     ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
     ANTHROPIC_MODEL: env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
     ANTHROPIC_MAX_TOKENS: env.ANTHROPIC_MAX_TOKENS || "12000",
+    ANTHROPIC_EFFORT: env.ANTHROPIC_EFFORT || "medium",
+    ANTHROPIC_PROMPT_CACHE_ENABLED: env.ANTHROPIC_PROMPT_CACHE_ENABLED || "true",
     PUBLIC_SITE_URL: env.PUBLIC_SITE_URL
   };
 }

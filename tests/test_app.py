@@ -222,6 +222,7 @@ def test_result_page_renders(db_session) -> None:
     assert "Share" in response.text
     assert "Lower-confidence result" in response.text
     assert "Plain and direct" in response.text
+    assert "Brand Fit <small>| 80 / 100</small>" in response.text
     assert "Keep this direction visible when revising the page." not in response.text
     assert "L001" not in response.text
     assert "L031" not in response.text

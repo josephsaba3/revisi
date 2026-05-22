@@ -201,7 +201,7 @@
     {% for metric in metric_rows %}
       <section class="scorecard-metric">
         <div class="metric-title">
-          <strong>{{ metric.label }}</strong>
+          <strong>{{ metric.label }} <small>| {{ metric.value }} / 100</small></strong>
           <span class="{% if metric.value >= 75 %}is-good{% elif metric.value >= 60 %}is-watch{% else %}is-bad{% endif %}">{% if metric.value >= 75 %}On-brand{% elif metric.value >= 60 %}Watch{% else %}Off-brand{% endif %}</span>
         </div>
         <div class="metric-bar {% if metric.value < 60 %}bad{% elif metric.value < 75 %}warn{% endif %}">

@@ -4,3 +4,44 @@ INFO:     Started reloader process [4460] using WatchFiles
 INFO:     Started server process [6240]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'tests\test_app.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [6240]
+WARNING:  WatchFiles detected changes in 'tests\test_app.py'. Reloading...
+INFO:     Started server process [28432]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [28432]
+INFO:     Started server process [3012]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app\config.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3012]
+WARNING:  WatchFiles detected changes in 'app\config.py', 'app\services\llm_providers.py', 'tests\test_llm_providers.py'. Reloading...
+INFO:     Started server process [16416]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app\services\llm_providers.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [16416]
+WARNING:  WatchFiles detected changes in 'app\config.py', 'tests\test_llm_providers.py', 'app\services\llm_providers.py'. Reloading...
+INFO:     Started server process [26092]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [26092]
+INFO:     Started server process [20924]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.

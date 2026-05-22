@@ -88,6 +88,7 @@ def test_anthropic_provider_uses_messages_parse(monkeypatch) -> None:
             anthropic_api_key="anthropic-test",
             anthropic_model="claude-sonnet-4-6",
             anthropic_max_tokens=12000,
+            anthropic_effort="medium",
         ),
         "Private prompt",
         {"page": {"url": "https://example.com"}},
@@ -99,3 +100,39 @@ def test_anthropic_provider_uses_messages_parse(monkeypatch) -> None:
     assert call_kwargs["max_tokens"] == 12000
     assert call_kwargs["system"] == "Private prompt"
     assert call_kwargs["output_format"] is AuditResult
+    assert call_kwargs["output_config"] == {"effort": "medium"}
+    assert call_kwargs["extra_body"] == {"cache_control": {"type": "ephemeral"}}
+
+
+def test_anthropic_provider_can_disable_prompt_cache(monkeypatch) -> None:
+    call_kwargs = {}
+    parsed_result = _audit_result()
+
+    class FakeResponse:
+        parsed_output = parsed_result
+
+    class FakeMessages:
+        def parse(self, **kwargs):
+            call_kwargs.update(kwargs)
+            return FakeResponse()
+
+    class FakeAnthropic:
+        def __init__(self, **_kwargs):
+            self.messages = FakeMessages()
+
+    monkeypatch.setattr(llm_providers, "Anthropic", FakeAnthropic)
+
+    result = llm_providers.request_structured_audit(
+        Settings(
+            llm_provider="anthropic",
+            anthropic_api_key="anthropic-test",
+            anthropic_effort="low",
+            anthropic_prompt_cache_enabled=False,
+        ),
+        "Private prompt",
+        {"page": {"url": "https://example.com"}},
+    )
+
+    assert result == parsed_result
+    assert call_kwargs["output_config"] == {"effort": "low"}
+    assert "extra_body" not in call_kwargs

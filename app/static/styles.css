@@ -4964,6 +4964,14 @@ button:disabled {
   letter-spacing: -0.015em;
 }
 
+.metric-title strong small {
+  color: var(--muted-2);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
 .metric-title span {
   border-radius: 999px;
   padding: 2px 8px;

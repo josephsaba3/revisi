@@ -59,20 +59,24 @@ def _request_openai_audit(settings: Settings, analysis_prompt: str, payload: dic
 
 def _request_anthropic_audit(settings: Settings, analysis_prompt: str, payload: dict) -> AuditResult | None:
     client = Anthropic(api_key=settings.anthropic_api_key)
+    request_kwargs = {
+        "model": settings.anthropic_model,
+        "max_tokens": settings.anthropic_max_tokens,
+        "system": analysis_prompt,
+        "messages": [
+            {
+                "role": "user",
+                "content": json.dumps(payload, ensure_ascii=False),
+            }
+        ],
+        "output_format": AuditResult,
+        "output_config": {"effort": settings.anthropic_effort},
+    }
+    if settings.anthropic_prompt_cache_enabled:
+        request_kwargs["extra_body"] = {"cache_control": {"type": "ephemeral"}}
 
     try:
-        response = client.messages.parse(
-            model=settings.anthropic_model,
-            max_tokens=settings.anthropic_max_tokens,
-            system=analysis_prompt,
-            messages=[
-                {
-                    "role": "user",
-                    "content": json.dumps(payload, ensure_ascii=False),
-                }
-            ],
-            output_format=AuditResult,
-        )
+        response = client.messages.parse(**request_kwargs)
     except AnthropicRateLimitError as exc:
         raise LLMProviderRateLimitError("Anthropic quota or rate limit hit") from exc
     except AnthropicError as exc:
