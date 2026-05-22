@@ -59,6 +59,13 @@ class AuditIssue(BaseModel):
     explanation: str = Field(max_length=800)
     suggested_rewrite: str = Field(max_length=800)
 
+    @field_validator("issue_type", mode="before")
+    @classmethod
+    def keep_issue_type_short(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip()[:80]
+        return value
+
 
 class RewriteSuggestion(BaseModel):
     source: str = Field(max_length=80)

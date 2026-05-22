@@ -24,7 +24,7 @@ Copy `.env.example` to `.env` for a local file-based setup. Keep the full audit 
 
 To compare the same audit flow through Anthropic instead of OpenAI, set `LLM_PROVIDER=anthropic`, fill `ANTHROPIC_API_KEY`, and leave `ANTHROPIC_MODEL=claude-sonnet-4-6` for the first pass. Revisi sends the same extracted payload and expects the same structured `AuditResult` response from either provider.
 
-Anthropic effort is set explicitly with `ANTHROPIC_EFFORT=medium` for the default Sonnet 4.6 test path. Change it to `low`, `high`, or `max` to compare the speed, cost, and audit-quality tradeoff.
+Anthropic effort is set explicitly with `ANTHROPIC_EFFORT=medium` for the default Sonnet 4.6 test path. Change it to `low`, `high`, or `max` to compare the speed, cost, and audit-quality tradeoff. If you switch to Haiku 4.5 with `ANTHROPIC_MODEL=claude-haiku-4-5-20251001`, leave `ANTHROPIC_EFFORT=` blank so Revisi omits the unsupported effort field.
 
 Anthropic prompt caching is enabled by default with `ANTHROPIC_PROMPT_CACHE_ENABLED=true`. This can help repeated scans reuse an identical prompt prefix during tests; it does not reduce the time Claude spends generating the audit output. Set it to `false` for uncached comparisons.
 

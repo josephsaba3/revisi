@@ -70,8 +70,9 @@ def _request_anthropic_audit(settings: Settings, analysis_prompt: str, payload: 
             }
         ],
         "output_format": AuditResult,
-        "output_config": {"effort": settings.anthropic_effort},
     }
+    if settings.anthropic_effort:
+        request_kwargs["output_config"] = {"effort": settings.anthropic_effort}
     if settings.anthropic_prompt_cache_enabled:
         request_kwargs["extra_body"] = {"cache_control": {"type": "ephemeral"}}
 

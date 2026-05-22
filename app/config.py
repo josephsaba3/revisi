@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-sonnet-4-6"
     anthropic_max_tokens: int = 12000
-    anthropic_effort: Literal["low", "medium", "high", "max"] = "medium"
+    anthropic_effort: Literal["", "low", "medium", "high", "max"] = "medium"
     anthropic_prompt_cache_enabled: bool = True
     request_timeout_seconds: float = 15.0
     firecrawl_api_key: str | None = None

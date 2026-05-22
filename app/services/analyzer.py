@@ -90,6 +90,7 @@ def _analysis_payload(page: ExtractedPage, brand_voice: str | None) -> dict:
             "Use 2-4 contextual modifiers.",
             "Return 3-6 top issues when possible.",
             "Return 3-6 line-level rewrites when possible.",
+            "Keep issue_type as a short category label, not a sentence or copy excerpt.",
             "Every top issue and line-level rewrite must include a line_id from evidence_lines.",
             "The original_copy or original field must be copied from the matching evidence line.",
             "Do not invent proof, metrics, customers, awards, guarantees, or product capabilities.",

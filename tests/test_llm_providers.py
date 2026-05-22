@@ -136,3 +136,37 @@ def test_anthropic_provider_can_disable_prompt_cache(monkeypatch) -> None:
     assert result == parsed_result
     assert call_kwargs["output_config"] == {"effort": "low"}
     assert "extra_body" not in call_kwargs
+
+
+def test_anthropic_provider_omits_blank_effort_for_haiku(monkeypatch) -> None:
+    call_kwargs = {}
+    parsed_result = _audit_result()
+
+    class FakeResponse:
+        parsed_output = parsed_result
+
+    class FakeMessages:
+        def parse(self, **kwargs):
+            call_kwargs.update(kwargs)
+            return FakeResponse()
+
+    class FakeAnthropic:
+        def __init__(self, **_kwargs):
+            self.messages = FakeMessages()
+
+    monkeypatch.setattr(llm_providers, "Anthropic", FakeAnthropic)
+
+    result = llm_providers.request_structured_audit(
+        Settings(
+            llm_provider="anthropic",
+            anthropic_api_key="anthropic-test",
+            anthropic_model="claude-haiku-4-5-20251001",
+            anthropic_effort="",
+        ),
+        "Private prompt",
+        {"page": {"url": "https://example.com"}},
+    )
+
+    assert result == parsed_result
+    assert call_kwargs["model"] == "claude-haiku-4-5-20251001"
+    assert "output_config" not in call_kwargs

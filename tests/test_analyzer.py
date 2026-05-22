@@ -5,6 +5,21 @@ from app.services.analyzer import analyze_page
 from app.services.llm_providers import LLMProviderRateLimitError
 
 
+def test_audit_issue_trims_long_model_issue_type() -> None:
+    issue = AuditIssue(
+        issue_type="Vague promise - keep every test organized without the operational proof needed by busy decision makers",
+        priority="High",
+        source="P",
+        line_id="L001",
+        original_copy="Keep every test organized.",
+        explanation="Needs a shorter category label.",
+        suggested_rewrite="Name the concrete task.",
+    )
+
+    assert len(issue.issue_type) == 80
+    assert issue.issue_type.startswith("Vague promise")
+
+
 def test_local_analyzer_returns_valid_audit_without_key(monkeypatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     get_settings.cache_clear()
