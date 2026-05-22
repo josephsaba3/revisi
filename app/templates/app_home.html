@@ -36,11 +36,13 @@
           <div class="app-empty">Add a site to start a paid audit run.</div>
         {% endif %}
       </div>
-      <form class="app-form site-create" method="post" action="/app/sites">
+      <form class="app-form site-create" method="post" action="/app/sites" enctype="multipart/form-data">
         <h2>Add site</h2>
         <label><span>Name</span><input name="name" value="{{ site_values.name if site_values else '' }}" placeholder="Client or site name"></label>
         <label><span>URL</span><input name="url" value="{{ site_values.url if site_values else '' }}" placeholder="example.com" required></label>
         <label><span>Brand voice guide</span><textarea name="brand_voice" rows="8" placeholder="Paste the voice guide or the notes the audit should obey.">{{ site_values.brand_voice if site_values else '' }}</textarea></label>
+        <label><span>Upload Markdown guide</span><input name="brand_voice_file" type="file" accept=".md,text/markdown"></label>
+        <p class="field-note">Optional. `.md` files only. Uploaded Markdown replaces pasted guide text for this site.</p>
         <button class="app-button primary" type="submit">Create site</button>
       </form>
     </section>

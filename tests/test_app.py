@@ -310,6 +310,51 @@ def test_app_site_workspace_lists_owned_sites(db_session) -> None:
     assert detail.status_code == 404
 
 
+def test_create_site_accepts_markdown_guide_upload(db_session) -> None:
+    user = main.models.User(id="00000000-0000-4000-8000-000000000003", email="guide@example.com")
+    db_session.add(user)
+    db_session.commit()
+    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[main.get_current_user] = lambda: SimpleNamespace(id=user.id, email=user.email)
+    client = TestClient(app)
+
+    try:
+        response = client.post(
+            "/app/sites",
+            data={"name": "Guide Site", "url": "guide.example", "brand_voice": "Pasted note"},
+            files={"brand_voice_file": ("brand-voice.md", b"# Voice\nPlain and precise.", "text/markdown")},
+            follow_redirects=False,
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    site = db_session.query(main.models.Site).filter(main.models.Site.name == "Guide Site").one()
+    assert response.status_code == 303
+    assert site.brand_voice_text == "# Voice\nPlain and precise."
+
+
+def test_create_site_rejects_non_markdown_guide_upload(db_session) -> None:
+    user = main.models.User(id="00000000-0000-4000-8000-000000000004", email="unsafe@example.com")
+    db_session.add(user)
+    db_session.commit()
+    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[main.get_current_user] = lambda: SimpleNamespace(id=user.id, email=user.email)
+    client = TestClient(app)
+
+    try:
+        response = client.post(
+            "/app/sites",
+            data={"name": "Unsafe Site", "url": "unsafe.example"},
+            files={"brand_voice_file": ("design.exe", b"MZ executable", "application/octet-stream")},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 400
+    assert "must be Markdown .md files" in response.text
+    assert db_session.query(main.models.Site).filter(main.models.Site.name == "Unsafe Site").count() == 0
+
+
 def test_free_scan_ignores_guide_depth_and_rewrites(monkeypatch, db_session) -> None:
     async def fake_fetch_html(_url: str) -> str:
         return "<main><h1>Home copy.</h1><a href='/pricing'>Pricing</a></main>"

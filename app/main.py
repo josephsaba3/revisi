@@ -43,6 +43,7 @@ from .services.phrase_flags import find_phrase_flags
 
 logger = logging.getLogger(__name__)
 CRAWLER_USER_AGENT = "BrandVoiceAuditor/0.1"
+MAX_MARKDOWN_GUIDE_BYTES = 256 * 1024
 DEFAULT_SEO_TITLE = "Revisi - Brand voice auditor for your website"
 DEFAULT_SEO_DESCRIPTION = (
     "Revisi is a brand voice auditor and website copy audit tool for marketers, founders, "
@@ -382,11 +383,12 @@ def app_home(
 
 
 @app.post("/app/sites")
-def create_site(
+async def create_site(
     request: Request,
     name: str = Form(""),
     url: str = Form(...),
     brand_voice: str = Form(""),
+    brand_voice_file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
     current_user: models.User | None = Depends(get_current_user),
 ) -> Response:
@@ -394,6 +396,7 @@ def create_site(
         return RedirectResponse("/login", status_code=303)
     try:
         base_url = normalize_url(url)
+        uploaded_guide = await _read_markdown_guide_file(brand_voice_file)
     except ValueError as exc:
         sites = db.query(models.Site).filter(models.Site.user_id == current_user.id).order_by(models.Site.updated_at.desc()).all()
         return templates.TemplateResponse(
@@ -404,11 +407,11 @@ def create_site(
         )
     parsed = urlparse(base_url)
     site = models.Site(
-        user=current_user,
+        user_id=current_user.id,
         name=name.strip() or parsed.netloc,
         base_url=base_url,
         domain=parsed.netloc.lower(),
-        brand_voice_text=brand_voice.strip() or None,
+        brand_voice_text=(uploaded_guide or brand_voice).strip() or None,
     )
     db.add(site)
     db.commit()
@@ -674,6 +677,23 @@ async def _read_brand_voice_file(file: UploadFile | None) -> str:
         return ""
     contents = await file.read()
     return contents.decode("utf-8", errors="ignore")
+
+
+async def _read_markdown_guide_file(file: UploadFile | None) -> str:
+    if not file or not file.filename:
+        return ""
+    filename = file.filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1].lower()
+    if not filename.endswith(".md"):
+        raise ValueError("Brand voice guide uploads must be Markdown .md files.")
+    contents = await file.read(MAX_MARKDOWN_GUIDE_BYTES + 1)
+    if len(contents) > MAX_MARKDOWN_GUIDE_BYTES:
+        raise ValueError("Brand voice guide uploads must be 256 KB or smaller.")
+    if b"\x00" in contents:
+        raise ValueError("Brand voice guide uploads must be plain Markdown text.")
+    try:
+        return contents.decode("utf-8").strip()
+    except UnicodeDecodeError as exc:
+        raise ValueError("Brand voice guide uploads must use UTF-8 Markdown text.") from exc
 
 
 async def _perform_scan(
