@@ -1,4 +1,6 @@
-INFO:     Started server process [14844]
+INFO:     Will watch for changes in these directories: ['G:\\My Drive\\Archive and Projects\\SplitPea\\brand-voice-auditor']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [4460] using WatchFiles
+INFO:     Started server process [6240]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)

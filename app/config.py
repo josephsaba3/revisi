@@ -9,10 +9,15 @@ class Settings(BaseSettings):
     app_name: str = "Brand Voice Auditor"
     public_site_url: str | None = None
     database_url: str = "sqlite:///./brand_voice_auditor.db"
+    llm_provider: Literal["openai", "anthropic"] = "openai"
+    llm_analysis_prompt: str | None = None
     openai_api_key: str | None = None
     openai_model: str = "gpt-5.5"
     openai_reasoning_effort: Literal["minimal", "low", "medium", "high"] = "low"
     openai_analysis_prompt: str | None = None
+    anthropic_api_key: str | None = None
+    anthropic_model: str = "claude-sonnet-4-6"
+    anthropic_max_tokens: int = 12000
     request_timeout_seconds: float = 15.0
     firecrawl_api_key: str | None = None
     firecrawl_fallback_enabled: bool = True

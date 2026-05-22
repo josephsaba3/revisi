@@ -1,10 +1,8 @@
-import httpx
-from openai import RateLimitError
-
 from app.config import get_settings
 from app.schemas import AuditIssue, AuditResult, ExtractedLine, ExtractedPage, RewriteSuggestion, Scorecard
 from app.services import analyzer
 from app.services.analyzer import analyze_page
+from app.services.llm_providers import LLMProviderRateLimitError
 
 
 def test_local_analyzer_returns_valid_audit_without_key(monkeypatch) -> None:
@@ -32,21 +30,15 @@ def test_local_analyzer_returns_valid_audit_without_key(monkeypatch) -> None:
 
 
 def test_analyzer_labels_openai_quota_fallback(monkeypatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    monkeypatch.setenv("OPENAI_ANALYSIS_PROMPT", "Private audit prompt")
+    monkeypatch.setenv("LLM_ANALYSIS_PROMPT", "Private audit prompt")
     get_settings.cache_clear()
 
-    class FakeResponses:
-        def parse(self, **_kwargs):
-            request = httpx.Request("POST", "https://api.openai.com/v1/responses")
-            response = httpx.Response(429, request=request)
-            raise RateLimitError("quota exceeded", response=response, body={"error": {"message": "quota"}})
+    def fake_request(*_args, **_kwargs):
+        raise LLMProviderRateLimitError("quota exceeded")
 
-    class FakeOpenAI:
-        def __init__(self, **_kwargs):
-            self.responses = FakeResponses()
-
-    monkeypatch.setattr(analyzer, "OpenAI", FakeOpenAI)
+    monkeypatch.setattr(analyzer, "request_structured_audit", fake_request)
     page = ExtractedPage(
         url="https://example.com",
         title="Example",
@@ -66,14 +58,16 @@ def test_analyzer_labels_openai_quota_fallback(monkeypatch) -> None:
     assert result.top_issues
     assert result.overall_score <= 100
 
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.delenv("OPENAI_ANALYSIS_PROMPT", raising=False)
+    monkeypatch.delenv("LLM_ANALYSIS_PROMPT", raising=False)
     get_settings.cache_clear()
 
 
 def test_analyzer_normalizes_explanatory_scoring_context(monkeypatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    monkeypatch.setenv("OPENAI_ANALYSIS_PROMPT", "Private audit prompt")
+    monkeypatch.setenv("LLM_ANALYSIS_PROMPT", "Private audit prompt")
     get_settings.cache_clear()
 
     parsed_result = AuditResult(
@@ -100,18 +94,7 @@ def test_analyzer_normalizes_explanatory_scoring_context(monkeypatch) -> None:
         recommended_next_action="Tighten the hero and product-section intro first.",
     )
 
-    class FakeResponse:
-        output_parsed = parsed_result
-
-    class FakeResponses:
-        def parse(self, **_kwargs):
-            return FakeResponse()
-
-    class FakeOpenAI:
-        def __init__(self, **_kwargs):
-            self.responses = FakeResponses()
-
-    monkeypatch.setattr(analyzer, "OpenAI", FakeOpenAI)
+    monkeypatch.setattr(analyzer, "request_structured_audit", lambda *_args, **_kwargs: parsed_result)
     page = ExtractedPage(
         url="https://stripe.com",
         title="Stripe",
@@ -127,16 +110,18 @@ def test_analyzer_normalizes_explanatory_scoring_context(monkeypatch) -> None:
     assert result.verdict
     assert result.overall_score <= 100
 
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.delenv("OPENAI_ANALYSIS_PROMPT", raising=False)
+    monkeypatch.delenv("LLM_ANALYSIS_PROMPT", raising=False)
     get_settings.cache_clear()
 
 
 def test_analyzer_uses_low_reasoning_and_drops_ungrounded_output(monkeypatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("OPENAI_MODEL", "gpt-5.5")
     monkeypatch.setenv("OPENAI_REASONING_EFFORT", "low")
-    monkeypatch.setenv("OPENAI_ANALYSIS_PROMPT", "Use the private prompt from env.")
+    monkeypatch.setenv("LLM_ANALYSIS_PROMPT", "Use the private prompt from env.")
     get_settings.cache_clear()
     call_kwargs = {}
 
@@ -195,19 +180,17 @@ def test_analyzer_uses_low_reasoning_and_drops_ungrounded_output(monkeypatch) ->
         recommended_next_action="Tighten the proof.",
     )
 
-    class FakeResponse:
-        output_parsed = parsed_result
+    def fake_request(settings, prompt, payload):
+        call_kwargs.update(
+            {
+                "settings": settings,
+                "prompt": prompt,
+                "payload": payload,
+            }
+        )
+        return parsed_result
 
-    class FakeResponses:
-        def parse(self, **kwargs):
-            call_kwargs.update(kwargs)
-            return FakeResponse()
-
-    class FakeOpenAI:
-        def __init__(self, **_kwargs):
-            self.responses = FakeResponses()
-
-    monkeypatch.setattr(analyzer, "OpenAI", FakeOpenAI)
+    monkeypatch.setattr(analyzer, "request_structured_audit", fake_request)
     page = ExtractedPage(
         url="https://example.com",
         title="Example",
@@ -219,24 +202,28 @@ def test_analyzer_uses_low_reasoning_and_drops_ungrounded_output(monkeypatch) ->
 
     result = analyze_page(page, None)
 
-    assert call_kwargs["reasoning"] == {"effort": "low"}
-    assert call_kwargs["model"] == "gpt-5.5"
-    assert call_kwargs["input"][0]["content"] == "Use the private prompt from env."
+    assert call_kwargs["settings"].openai_reasoning_effort == "low"
+    assert call_kwargs["settings"].openai_model == "gpt-5.5"
+    assert call_kwargs["prompt"] == "Use the private prompt from env."
+    assert call_kwargs["payload"]["page"]["url"] == "https://example.com"
     assert result.verdict == "Strong, with clear revision targets"
     assert [issue.original_copy for issue in result.top_issues] == ["Useful page copy."]
     assert result.top_issues[0].line_id == "L001"
     assert [rewrite.original for rewrite in result.line_level_rewrites] == ["Useful page copy."]
     assert result.line_level_rewrites[0].line_id == "L001"
 
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_MODEL", raising=False)
     monkeypatch.delenv("OPENAI_REASONING_EFFORT", raising=False)
-    monkeypatch.delenv("OPENAI_ANALYSIS_PROMPT", raising=False)
+    monkeypatch.delenv("LLM_ANALYSIS_PROMPT", raising=False)
     get_settings.cache_clear()
 
 
-def test_openai_prompt_is_required_with_api_key(monkeypatch) -> None:
+def test_llm_prompt_is_required_with_api_key(monkeypatch) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.delenv("LLM_ANALYSIS_PROMPT", raising=False)
     monkeypatch.delenv("OPENAI_ANALYSIS_PROMPT", raising=False)
     get_settings.cache_clear()
 
@@ -252,9 +239,10 @@ def test_openai_prompt_is_required_with_api_key(monkeypatch) -> None:
     try:
         analyze_page(page, None)
     except RuntimeError as exc:
-        assert "OPENAI_ANALYSIS_PROMPT" in str(exc)
+        assert "LLM_ANALYSIS_PROMPT" in str(exc)
     else:
-        raise AssertionError("Expected OPENAI_ANALYSIS_PROMPT to be required")
+        raise AssertionError("Expected LLM_ANALYSIS_PROMPT to be required")
     finally:
+        monkeypatch.delenv("LLM_PROVIDER", raising=False)
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         get_settings.cache_clear()

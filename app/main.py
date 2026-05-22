@@ -849,7 +849,7 @@ def _result_template_context(scan_model: models.Scan, page_id: int | None = None
     word_count = len(extracted_text.split())
     sentence_count = extracted_text.count(".") + extracted_text.count("?") + extracted_text.count("!")
     fallback_notice = next(
-        (note for note in (page.voice_summary or []) if "OpenAI" in note and "local draft checker" in note),
+        (note for note in (page.voice_summary or []) if "local draft checker" in note),
         None,
     )
     return {

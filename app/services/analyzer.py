@@ -1,11 +1,14 @@
-import json
 import logging
-
-from openai import OpenAI, OpenAIError, RateLimitError
 
 from app.config import get_settings
 from app.schemas import AuditIssue, AuditResult, ExtractedPage, RewriteSuggestion, Scorecard
 
+from .llm_providers import (
+    LLMProviderError,
+    LLMProviderRateLimitError,
+    provider_has_credentials,
+    request_structured_audit,
+)
 from .phrase_flags import estimate_ai_sludge_risk, find_phrase_flags
 from .scoring import calculate_overall_score, verdict_for_score
 from .spec_loader import SCORING_CONTEXT_WEIGHTS, load_rewrite_rules, load_scoring_guide
@@ -16,41 +19,31 @@ logger = logging.getLogger(__name__)
 
 def analyze_page(page: ExtractedPage, brand_voice: str | None) -> AuditResult:
     settings = get_settings()
-    if not settings.openai_api_key:
+    if not provider_has_credentials(settings):
         return _local_draft_result(page, brand_voice)
-    analysis_prompt = (settings.openai_analysis_prompt or "").strip()
+    analysis_prompt = (settings.llm_analysis_prompt or settings.openai_analysis_prompt or "").strip()
     if not analysis_prompt:
-        raise RuntimeError("OPENAI_ANALYSIS_PROMPT must be set when OPENAI_API_KEY is configured.")
+        raise RuntimeError("LLM_ANALYSIS_PROMPT must be set when an LLM provider API key is configured.")
 
-    client = OpenAI(api_key=settings.openai_api_key)
     payload = _analysis_payload(page, brand_voice)
 
     try:
-        response = client.responses.parse(
-            model=settings.openai_model,
-            reasoning={"effort": settings.openai_reasoning_effort},
-            input=[
-                {
-                    "role": "system",
-                    "content": analysis_prompt,
-                },
-                {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
-            ],
-            text_format=AuditResult,
-        )
-    except RateLimitError:
-        logger.warning("OpenAI quota or rate limit hit; returning local draft result")
+        parsed = request_structured_audit(settings, analysis_prompt, payload)
+    except LLMProviderRateLimitError:
+        provider_name = _provider_name(settings.llm_provider)
+        logger.warning("%s quota or rate limit hit; returning local draft result", settings.llm_provider)
         return _local_draft_result(
             page,
             brand_voice,
-            note="OpenAI quota or rate limit was hit, so this result uses the local draft checker.",
+            note=f"{provider_name} quota or rate limit was hit, so this result uses the local draft checker.",
         )
-    except OpenAIError:
-        logger.exception("OpenAI audit request failed; returning local draft result")
+    except LLMProviderError:
+        provider_name = _provider_name(settings.llm_provider)
+        logger.exception("%s audit request failed; returning local draft result", settings.llm_provider)
         return _local_draft_result(
             page,
             brand_voice,
-            note="OpenAI analysis failed, so this result uses the local draft checker.",
+            note=f"{provider_name} analysis failed, so this result uses the local draft checker.",
         )
     except Exception:
         logger.exception("Unexpected audit request failure; returning local draft result")
@@ -60,16 +53,23 @@ def analyze_page(page: ExtractedPage, brand_voice: str | None) -> AuditResult:
             note="Structured analysis failed, so this result uses the local draft checker.",
         )
 
-    parsed = response.output_parsed
     if not parsed:
-        logger.error("OpenAI returned no structured audit result; returning local draft result")
+        provider_name = _provider_name(settings.llm_provider)
+        logger.error("%s returned no structured audit result; returning local draft result", settings.llm_provider)
         return _local_draft_result(
             page,
             brand_voice,
-            note="OpenAI returned no structured result, so this result uses the local draft checker.",
+            note=f"{provider_name} returned no structured result, so this result uses the local draft checker.",
         )
 
     return _normalize_result(parsed, page)
+
+
+def _provider_name(raw_provider: str) -> str:
+    return {
+        "anthropic": "Anthropic",
+        "openai": "OpenAI",
+    }.get(raw_provider, raw_provider)
 
 
 def _analysis_payload(page: ExtractedPage, brand_voice: str | None) -> dict:
