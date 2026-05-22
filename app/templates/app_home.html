@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Revisi App{% endblock %}
+{% block main_class %}revisi-app-root{% endblock %}
+
+{% block content %}
+<div class="app-desk">
+  <header class="app-bar">
+    <a href="/app" aria-label="Revisi app home"><img src="{{ url_for('static', path='/revisi-wordmark.svg') }}" alt="Revisi" width="103" height="40"></a>
+    <div class="app-user">
+      <span>{{ current_user.email }}</span>
+      <form method="post" action="/logout"><button type="submit">Log out</button></form>
+    </div>
+  </header>
+  <main class="app-layout">
+    <section class="app-lead">
+      <p class="app-kicker">Paid workspace</p>
+      <h1>Sites and audit runs.</h1>
+      <p>Store the voice guide once, run deeper scans, and keep the revision trail.</p>
+    </section>
+    {% if flash %}<p class="app-flash">{{ flash }}</p>{% endif %}
+    {% if error %}<p class="auth-error">{{ error }}</p>{% endif %}
+    <section class="site-board">
+      <div class="site-list">
+        <h2>Your sites</h2>
+        {% if sites %}
+          {% for site in sites %}
+            {% set latest = site.scans[0] if site.scans else None %}
+            <a class="site-row" href="/app/sites/{{ site.id }}">
+              <strong>{{ site.name }}</strong>
+              <span>{{ site.domain }}</span>
+              <em>{% if latest %}Last scanned {{ latest.created_at.strftime("%d %b %Y") }}{% else %}Ready for first scan{% endif %}</em>
+            </a>
+          {% endfor %}
+        {% else %}
+          <div class="app-empty">Add a site to start a paid audit run.</div>
+        {% endif %}
+      </div>
+      <form class="app-form site-create" method="post" action="/app/sites">
+        <h2>Add site</h2>
+        <label><span>Name</span><input name="name" value="{{ site_values.name if site_values else '' }}" placeholder="Client or site name"></label>
+        <label><span>URL</span><input name="url" value="{{ site_values.url if site_values else '' }}" placeholder="example.com" required></label>
+        <label><span>Brand voice guide</span><textarea name="brand_voice" rows="8" placeholder="Paste the voice guide or the notes the audit should obey.">{{ site_values.brand_voice if site_values else '' }}</textarea></label>
+        <button class="app-button primary" type="submit">Create site</button>
+      </form>
+    </section>
+  </main>
+</div>
+{% endblock %}

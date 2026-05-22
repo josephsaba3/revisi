@@ -22,6 +22,8 @@ If `DATABASE_URL` is not set, the app uses `sqlite:///./brand_voice_auditor.db`.
 
 Copy `.env.example` to `.env` for a local file-based setup. Keep the full audit prompt in `LLM_ANALYSIS_PROMPT`; it is only sent to the selected model and is not rendered in the report. `OPENAI_ANALYSIS_PROMPT` remains supported as a legacy OpenAI prompt fallback.
 
+The homepage and `/r/{token}` report path stay public for free one-page diagnostic scans. The paid workspace starts at `/app`, with Supabase-backed account screens at `/signup` and `/login`. Configure `SESSION_SECRET`, `PUBLIC_SITE_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `TURNSTILE_SITE_KEY` before using the account flow. Supabase Auth must allow the configured `/auth/callback` URL. Revisi forwards the Turnstile token to Supabase on signup and password login.
+
 To make Anthropic primary, set `LLM_PROVIDER=anthropic`, fill `ANTHROPIC_API_KEY`, and leave `ANTHROPIC_MODEL=claude-sonnet-4-6` for the first pass. Keep `OPENAI_API_KEY` set as well if you want Revisi to fall back to GPT when the Anthropic request fails or returns no structured result. Revisi sends the same extracted payload and expects the same structured `AuditResult` response from either provider.
 
 Anthropic effort is set explicitly with `ANTHROPIC_EFFORT=medium` for the default Sonnet 4.6 test path. Change it to `low`, `high`, or `max` to compare the speed, cost, and audit-quality tradeoff. If you switch to Haiku 4.5 with `ANTHROPIC_MODEL=claude-haiku-4-5-20251001`, leave `ANTHROPIC_EFFORT=` blank so Revisi omits the unsupported effort field.

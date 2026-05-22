@@ -8,7 +8,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "Brand Voice Auditor"
     public_site_url: str | None = None
+    session_secret: str = "dev-revisi-session-secret"
+    is_production: bool = False
     database_url: str = "sqlite:///./brand_voice_auditor.db"
+    supabase_url: str = ""
+    supabase_publishable_key: str = ""
+    supabase_secret_key: str = ""
+    turnstile_site_key: str = ""
+    turnstile_secret_key: str = ""
     llm_provider: Literal["openai", "anthropic"] = "openai"
     llm_analysis_prompt: str | None = None
     openai_api_key: str | None = None

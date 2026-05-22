@@ -17,7 +17,7 @@ from .spec_loader import SCORING_CONTEXT_WEIGHTS, load_rewrite_rules, load_scori
 logger = logging.getLogger(__name__)
 
 
-def analyze_page(page: ExtractedPage, brand_voice: str | None) -> AuditResult:
+def analyze_page(page: ExtractedPage, brand_voice: str | None, include_rewrites: bool = True) -> AuditResult:
     settings = get_settings()
     if not provider_has_credentials(settings):
         return _local_draft_result(page, brand_voice)
@@ -25,7 +25,7 @@ def analyze_page(page: ExtractedPage, brand_voice: str | None) -> AuditResult:
     if not analysis_prompt:
         raise RuntimeError("LLM_ANALYSIS_PROMPT must be set when an LLM provider API key is configured.")
 
-    payload = _analysis_payload(page, brand_voice)
+    payload = _analysis_payload(page, brand_voice, include_rewrites=include_rewrites)
 
     try:
         parsed = request_structured_audit(settings, analysis_prompt, payload)
@@ -72,10 +72,40 @@ def _provider_name(raw_provider: str) -> str:
     }.get(raw_provider, raw_provider)
 
 
-def _analysis_payload(page: ExtractedPage, brand_voice: str | None) -> dict:
+def _analysis_payload(page: ExtractedPage, brand_voice: str | None, *, include_rewrites: bool = True) -> dict:
     text = page.combined_text
+    constraints = [
+        "Use exactly one allowed_scoring_contexts value for scoring_context.",
+        "Use 2-4 contextual modifiers.",
+        "Keep verdict under 80 characters.",
+        "Return 3-6 top issues when possible.",
+        "Keep issue_type as a short category label, not a sentence or copy excerpt.",
+        "Every top issue must include a line_id from evidence_lines.",
+        "The original_copy field must be copied from the matching evidence line.",
+        "Do not invent proof, metrics, customers, awards, guarantees, or product capabilities.",
+    ]
+    if include_rewrites:
+        constraints.extend(
+            [
+                "Return 3-6 line-level rewrites when possible.",
+                "Every line-level rewrite must include a line_id from evidence_lines.",
+                "The rewrite original field must be copied from the matching evidence line.",
+            ]
+        )
+    else:
+        constraints.extend(
+            [
+                "This is a free diagnostic audit. Explain findings without delivering concrete rewritten copy.",
+                "Return no line-level rewrites.",
+                "Leave suggested_rewrite empty on top issues.",
+            ]
+        )
     return {
-        "task": "Audit this one page for brand voice, clarity, trust, specificity, AI sludge risk, and line-level rewrites.",
+        "task": (
+            "Audit this one page for brand voice, clarity, trust, specificity, AI sludge risk, and line-level rewrites."
+            if include_rewrites
+            else "Audit this one page for copy clarity, trust, specificity, AI sludge risk, and generic voice drift."
+        ),
         "brand_voice_source": "provided" if brand_voice else "inferred voice, not confirmed",
         "brand_voice": brand_voice or "",
         "page": page.model_dump(exclude={"lines"}),
@@ -84,18 +114,8 @@ def _analysis_payload(page: ExtractedPage, brand_voice: str | None) -> dict:
         "estimated_ai_sludge_risk": estimate_ai_sludge_risk(text),
         "allowed_scoring_contexts": list(SCORING_CONTEXT_WEIGHTS),
         "scoring_guide": load_scoring_guide(),
-        "rewrite_rules": load_rewrite_rules(),
-        "constraints": [
-            "Use exactly one allowed_scoring_contexts value for scoring_context.",
-            "Use 2-4 contextual modifiers.",
-            "Keep verdict under 80 characters.",
-            "Return 3-6 top issues when possible.",
-            "Return 3-6 line-level rewrites when possible.",
-            "Keep issue_type as a short category label, not a sentence or copy excerpt.",
-            "Every top issue and line-level rewrite must include a line_id from evidence_lines.",
-            "The original_copy or original field must be copied from the matching evidence line.",
-            "Do not invent proof, metrics, customers, awards, guarantees, or product capabilities.",
-        ],
+        "rewrite_rules": load_rewrite_rules() if include_rewrites else [],
+        "constraints": constraints,
     }
 
 

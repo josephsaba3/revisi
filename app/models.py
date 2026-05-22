@@ -14,6 +14,9 @@ class Scan(Base):
     public_token: Mapped[str] = mapped_column(String(64), unique=True, index=True, default=lambda: uuid4().hex)
     submitted_url: Mapped[str] = mapped_column(Text)
     normalized_url: Mapped[str] = mapped_column(Text)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id", ondelete="SET NULL"), nullable=True, index=True)
+    scan_mode: Mapped[str] = mapped_column(String(32), default="free", server_default="free")
     brand_voice_source: Mapped[str] = mapped_column(String(64))
     brand_voice_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -23,6 +26,8 @@ class Scan(Base):
         cascade="all, delete-orphan",
         order_by="PageResult.id",
     )
+    user: Mapped["User | None"] = relationship(back_populates="scans")
+    site: Mapped["Site | None"] = relationship(back_populates="scans")
 
     @property
     def page_result(self) -> "PageResult | None":
@@ -31,6 +36,64 @@ class Scan(Base):
     @page_result.setter
     def page_result(self, value: "PageResult") -> None:
         self.page_results = [value]
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    email: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    sessions: Mapped[list["AppSession"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    sites: Mapped[list["Site"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    scans: Mapped[list[Scan]] = relationship(back_populates="user")
+
+
+class AppSession(Base):
+    __tablename__ = "app_sessions"
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    access_token: Mapped[str] = mapped_column(Text)
+    refresh_token: Mapped[str] = mapped_column(Text)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    user: Mapped[User] = relationship(back_populates="sessions")
+
+
+class Site(Base):
+    __tablename__ = "sites"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(Text)
+    base_url: Mapped[str] = mapped_column(Text)
+    domain: Mapped[str] = mapped_column(Text, index=True)
+    brand_voice_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    user: Mapped[User] = relationship(back_populates="sites")
+    scans: Mapped[list[Scan]] = relationship(
+        back_populates="site",
+        order_by="Scan.created_at.desc()",
+    )
 
 
 class PageResult(Base):

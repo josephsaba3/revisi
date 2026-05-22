@@ -9,6 +9,8 @@
 {% set title = page.title or page.url %}
 {% set page_path = "/" + page.url.split("/", 3)[3] if "/" in page.url.replace("https://", "").replace("http://", "") else "/" %}
 {% set weak_metrics = metric_rows|selectattr("value", "lt", 75)|list %}
+{% set is_paid_report = app_report or scan.scan_mode == "paid_app" %}
+{% set result_base = report_path if report_path else "/r/" ~ scan.public_token %}
 
 <div class="audit-workspace">
   <span class="sr-only">Revisi Brand Audit Report</span>
@@ -29,7 +31,7 @@
         <div class="action-menu-panel">
           <a href="/">+ New scan</a>
           <a href="{{ page.url }}" target="_blank" rel="noreferrer">Source page</a>
-          <button type="button" data-export-pdf>Export PDF</button>
+          {% if is_paid_report %}<button type="button" data-export-pdf>Export PDF</button>{% endif %}
         </div>
       </details>
     </nav>
@@ -63,7 +65,7 @@
         {% set listed_issues = listed_page.issues|list %}
         {% set listed_url = listed_page.url.replace("https://", "").replace("http://", "") %}
         {% set listed_path = "/" + listed_url.split("/", 1)[1] if "/" in listed_url else "/" %}
-        <a class="page-row{% if listed_page.id == page.id %} is-selected{% endif %}" href="/r/{{ scan.public_token }}?page_id={{ listed_page.id }}">
+        <a class="page-row{% if listed_page.id == page.id %} is-selected{% endif %}" href="{{ result_base }}?page_id={{ listed_page.id }}">
           <span class="page-dot {% if listed_page.overall_score < 60 %}bad{% elif listed_page.overall_score < 75 %}warn{% endif %}"></span>
           <span class="page-row-main">
             <strong>{{ (listed_page.title or listed_page.url)|truncate(34, True) }}</strong>
@@ -162,14 +164,25 @@
                         <p>{{ line_issues[0].original_copy }}</p>
                       </div>
                     </div>
-                    <div class="rewrite-strip">
-                      <strong>Suggested rewrite</strong>
-                      <p>{{ line_rewrites[0].rewrite if line_rewrites else line_issues[0].suggested_rewrite }}</p>
-                    </div>
+                    {% if is_paid_report %}
+                      <div class="rewrite-strip">
+                        <strong>Suggested rewrite</strong>
+                        <p>{{ line_rewrites[0].rewrite if line_rewrites else line_issues[0].suggested_rewrite }}</p>
+                      </div>
+                    {% else %}
+                      <div class="rewrite-strip paid-lock">
+                        <strong>Paid rewrite</strong>
+                        <p>Revisi found the line. The app adds brand-aware rewrite options.</p>
+                      </div>
+                    {% endif %}
                     <div class="finding-actions">
                       <button type="button">Ignore</button>
                       <button type="button" data-copy="{{ line_issues[0].original_copy }}">Copy original</button>
-                      <button class="primary" type="button" data-copy="{{ line_rewrites[0].rewrite if line_rewrites else line_issues[0].suggested_rewrite }}">Copy rewrite</button>
+                      {% if is_paid_report %}
+                        <button class="primary" type="button" data-copy="{{ line_rewrites[0].rewrite if line_rewrites else line_issues[0].suggested_rewrite }}">Copy rewrite</button>
+                      {% else %}
+                        <a class="primary" href="/signup">Open app</a>
+                      {% endif %}
                     </div>
                   </div>
                 </div>
@@ -226,9 +239,14 @@
     <strong>{{ flagged_count }} finding{% if flagged_count != 1 %}s{% endif %}</strong>
     <span>on this page · roughly {{ [flagged_count * 6, 6]|max }} min to fix</span>
     <div>
-      <button type="button" data-share-report>Share</button>
-      <button type="button" data-export-pdf>Export PDF</button>
-      <a href="/">Run another scan</a>
+      {% if is_paid_report %}
+        <button type="button" data-share-report>Share</button>
+        <button type="button" data-export-pdf>Export PDF</button>
+        <a href="{{ report_back_url or '/' }}">Back to site</a>
+      {% else %}
+        <a href="/signup">Save guides and rewrites</a>
+        <a href="/">Run another free scan</a>
+      {% endif %}
     </div>
   </footer>
 </div>

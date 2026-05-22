@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site.name }} - Revisi{% endblock %}
+{% block main_class %}revisi-app-root{% endblock %}
+
+{% block content %}
+<div class="app-desk">
+  <header class="app-bar">
+    <a href="/app" aria-label="Revisi app home"><img src="{{ url_for('static', path='/revisi-wordmark.svg') }}" alt="Revisi" width="103" height="40"></a>
+    <div class="app-user">
+      <a href="/app">All sites</a>
+      <span>{{ current_user.email }}</span>
+      <form method="post" action="/logout"><button type="submit">Log out</button></form>
+    </div>
+  </header>
+  <main class="app-layout site-layout">
+    <header class="site-head">
+      <div>
+        <p class="app-kicker">Site workspace</p>
+        <h1>{{ site.name }}</h1>
+        <p>{{ site.base_url }}</p>
+      </div>
+      <form class="scan-runner" method="post" action="/app/sites/{{ site.id }}/scan">
+        <label>
+          <span>Depth</span>
+          <select name="depth">
+            <option value="scan">One page</option>
+            <option value="site" selected>Site scan</option>
+            <option value="deep">Deep scan</option>
+          </select>
+        </label>
+        <button class="app-button primary" type="submit">{% if scan_rows %}Rescan site{% else %}Run audit{% endif %}</button>
+      </form>
+    </header>
+    {% if flash %}<p class="app-flash">{{ flash }}</p>{% endif %}
+    {% if error %}<p class="auth-error">{{ error }}</p>{% endif %}
+    <div class="site-grid">
+      <section class="history-band">
+        <div class="band-head">
+          <h2>Scan history</h2>
+          {% if latest_scan %}
+            <strong>{{ latest_scan.score }}<small>/100 latest</small></strong>
+          {% endif %}
+        </div>
+        {% if scan_rows %}
+          {% for row in scan_rows %}
+            <a class="scan-row" href="/app/sites/{{ site.id }}/scans/{{ row.scan.id }}">
+              <span>{{ row.scan.created_at.strftime("%d %b %Y %H:%M") }}</span>
+              <strong>{{ row.score }}/100</strong>
+              <em>{{ row.page_count }} page{% if row.page_count != 1 %}s{% endif %}</em>
+              <b class="{% if row.delta is not none and row.delta < 0 %}down{% endif %}">
+                {% if row.delta is none %}First run{% elif row.delta > 0 %}+{{ row.delta }}{% else %}{{ row.delta }}{% endif %}
+              </b>
+            </a>
+          {% endfor %}
+        {% else %}
+          <div class="app-empty">Run the first scan to start the score trail.</div>
+        {% endif %}
+      </section>
+      <form class="app-form guide-editor" method="post" action="/app/sites/{{ site.id }}/guide">
+        <h2>Brand voice guide</h2>
+        <label>
+          <span>Used on future paid scans</span>
+          <textarea name="brand_voice" rows="18" placeholder="Paste voice rules, examples, anti-references, and banned phrases.">{{ site.brand_voice_text or '' }}</textarea>
+        </label>
+        <button class="app-button" type="submit">Save guide</button>
+      </form>
+    </div>
+  </main>
+</div>
+{% endblock %}

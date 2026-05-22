@@ -59,25 +59,26 @@
         <span id="url-status">Awaiting</span>
       </div>
 
-      <details class="guide-drawer">
-        <summary>Add brand voice guide or notes</summary>
+      <details class="guide-drawer locked-guide">
+        <summary>Brand voice guide is in the paid app</summary>
         <div class="guide-grid">
           <div class="drop" id="drop">
             <div class="icon" id="drop-icon">MD</div>
             <div class="body">
-              <div class="t1" id="drop-t1">Drop design.md or brand-voice.md here, or click to pick a file.</div>
-              <div class="t2" id="drop-t2">We look for headings like Voice, Banned, Tone, Anti-references.</div>
+              <div class="t1" id="drop-t1">Free audits use generic copy guidance.</div>
+              <div class="t2" id="drop-t2">Sign in to save a voice guide, rescan, and audit more pages.</div>
             </div>
             <div class="meta" id="drop-meta">
               <span>md / mdx / txt</span>
             </div>
-            <input id="file-input" name="brand_voice_file" type="file" accept=".md,.mdx,.txt,.markdown,.json,text/markdown,text/plain,application/json" hidden>
+            <input id="file-input" name="brand_voice_file" type="file" accept=".md,.mdx,.txt,.markdown,.json,text/markdown,text/plain,application/json" hidden disabled>
           </div>
           <div class="voice-inline">
-            <label for="brand_voice">Paste voice notes instead</label>
-            <textarea id="brand_voice" name="brand_voice" rows="5" placeholder="Optional. Paste voice notes, audience context, examples, or banned phrases.">{{ brand_voice or '' }}</textarea>
+            <label for="brand_voice">Saved voice guide</label>
+            <textarea id="brand_voice" name="brand_voice" rows="5" placeholder="Available after login." disabled></textarea>
           </div>
         </div>
+        <a class="guide-upgrade" href="/signup">Open the app</a>
       </details>
 
     </form>

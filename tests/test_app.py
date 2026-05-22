@@ -5,6 +5,7 @@ from app.schemas import AuditIssue, AuditResult, ExtractedLine, ExtractedPage, R
 from app.services.extractor import FetchError
 from fastapi.testclient import TestClient
 from app.main import app, get_db
+from types import SimpleNamespace
 from urllib import robotparser
 
 
@@ -218,8 +219,9 @@ def test_result_page_renders(db_session) -> None:
     assert "Revisi Brand Audit Report" in response.text
     assert "<title>Revisi Audit Report</title>" in response.text
     assert '<meta name="robots" content="noindex, nofollow">' in response.text
-    assert "Export PDF" in response.text
-    assert "Share" in response.text
+    assert "Export PDF" not in response.text
+    assert "Share" not in response.text
+    assert "Save guides and rewrites" in response.text
     assert "Lower-confidence result" in response.text
     assert "Plain and direct" in response.text
     assert "Brand Fit <small>| 80 / 100</small>" in response.text
@@ -272,6 +274,97 @@ def test_scan_post_returns_job_id(monkeypatch) -> None:
     finally:
         _scan_attempts.clear()
         _scan_jobs.clear()
+
+
+def test_app_routes_require_login() -> None:
+    client = TestClient(app)
+    response = client.get("/app", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login"
+
+
+def test_app_site_workspace_lists_owned_sites(db_session) -> None:
+    user = main.models.User(id="00000000-0000-4000-8000-000000000001", email="editor@example.com")
+    other_user = main.models.User(id="00000000-0000-4000-8000-000000000002", email="other@example.com")
+    site = main.models.Site(user=user, name="Client Site", base_url="https://client.example", domain="client.example")
+    other_site = main.models.Site(user=other_user, name="Other Site", base_url="https://other.example", domain="other.example")
+    db_session.add_all([user, other_user, site, other_site])
+    db_session.commit()
+    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[main.get_current_user] = lambda: SimpleNamespace(
+        id="00000000-0000-4000-8000-000000000001",
+        email="editor@example.com",
+    )
+    client = TestClient(app)
+
+    try:
+        response = client.get("/app")
+        detail = client.get(f"/app/sites/{other_site.id}")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert "Client Site" in response.text
+    assert "Other Site" not in response.text
+    assert detail.status_code == 404
+
+
+def test_free_scan_ignores_guide_depth_and_rewrites(monkeypatch, db_session) -> None:
+    async def fake_fetch_html(_url: str) -> str:
+        return "<main><h1>Home copy.</h1><a href='/pricing'>Pricing</a></main>"
+
+    def fake_analyze_page(page, brand_voice, include_rewrites):
+        assert brand_voice is None
+        assert include_rewrites is False
+        return AuditResult(
+            overall_score=70,
+            verdict="Usable but generic or under-supported",
+            scoring_context="General brand copy",
+            contextual_modifiers=["Message Hierarchy"],
+            scores=Scorecard(
+                brand_fit=70,
+                audience_fit=70,
+                clarity=70,
+                human_sound=70,
+                specificity=70,
+                trust=70,
+                distinctiveness=70,
+            ),
+            ai_sludge_risk=20,
+            top_issues=[
+                AuditIssue(
+                    issue_type="Too vague",
+                    priority="High",
+                    source="H1",
+                    original_copy="Home copy.",
+                    explanation="Needs detail.",
+                    suggested_rewrite="A paid concrete rewrite.",
+                )
+            ],
+            line_level_rewrites=[
+                RewriteSuggestion(
+                    source="H1",
+                    original="Home copy.",
+                    rewrite="A paid concrete rewrite.",
+                    reason="More specific.",
+                )
+            ],
+            voice_summary=["Plain and direct"],
+            recommended_next_action="Tighten the hero.",
+        )
+
+    monkeypatch.setattr(main, "fetch_html", fake_fetch_html)
+    monkeypatch.setattr(main, "analyze_page", fake_analyze_page)
+    monkeypatch.setattr(main, "_fetch_robots_rules", lambda _url: main.asyncio.sleep(0, result=_allow_all_robots()))
+
+    scan = main.asyncio.run(_perform_scan("example.com", "site", "Private guide", "", db_session, scan_mode="free"))
+
+    assert scan.scan_mode == "free"
+    assert scan.brand_voice_text is None
+    assert len(scan.page_results) == 1
+    assert scan.page_result.rewrites == []
+    assert scan.page_result.issues[0].suggested_rewrite == ""
 
 
 def test_scan_progress_returns_done_report_url() -> None:

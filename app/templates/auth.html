@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}{{ seo.title }}{% endblock %}
+{% block main_class %}auth-root{% endblock %}
+
+{% block content %}
+<main class="auth-stage">
+  <a class="auth-brand" href="/" aria-label="Revisi home">
+    <img src="{{ url_for('static', path='/revisi-wordmark.svg') }}" alt="Revisi" width="103" height="40">
+  </a>
+  <section class="auth-sheet">
+    <p class="app-kicker">
+      {% if mode == "login" %}Workspace access{% elif mode == "forgot" or mode == "reset" %}Account recovery{% else %}Paid app{% endif %}
+    </p>
+    <h1>
+      {% if mode == "login" %}Log in to your audit desk.{% elif mode == "forgot" %}Reset your password.{% elif mode == "reset" %}Choose a new password.{% else %}Create your Revisi account.{% endif %}
+    </h1>
+    {% if flash %}<p class="auth-flash">{{ flash }}</p>{% endif %}
+    {% if error %}<p class="auth-error">{{ error }}</p>{% endif %}
+    <form class="app-form auth-form" method="post" action="{% if mode == 'login' %}/login{% elif mode == 'forgot' %}/forgot-password{% elif mode == 'reset' %}/reset-password{% else %}/signup{% endif %}">
+      {% if mode != "reset" %}
+        <label>
+          <span>Email</span>
+          <input type="email" name="email" value="{{ values.email or '' }}" autocomplete="email" required>
+        </label>
+      {% endif %}
+      {% if mode != "forgot" %}
+        <label>
+          <span>{% if mode == "reset" %}New password{% else %}Password{% endif %}</span>
+          <input type="password" name="password" autocomplete="{% if mode == 'login' %}current-password{% else %}new-password{% endif %}" required>
+        </label>
+      {% endif %}
+      {% if mode == "signup" or mode == "reset" %}
+        <label>
+          <span>Confirm password</span>
+          <input type="password" name="confirm_password" autocomplete="new-password" required>
+        </label>
+        <p class="field-note">Use 8+ characters with uppercase, lowercase, a number, and a symbol.</p>
+      {% endif %}
+      {% if mode == "signup" or mode == "login" %}
+        <input type="hidden" name="revisi-turnstile-response" data-turnstile-response>
+        <div class="turnstile-field" data-turnstile-widget data-sitekey="{{ settings.turnstile_site_key }}"></div>
+      {% endif %}
+      <button class="app-button primary" type="submit">
+        {% if mode == "login" %}Log in{% elif mode == "forgot" %}Send reset link{% elif mode == "reset" %}Update password{% else %}Create account{% endif %}
+      </button>
+    </form>
+    <nav class="auth-links" aria-label="Account actions">
+      {% if mode == "login" %}
+        <a href="/signup">Create account</a>
+        <a href="/forgot-password">Reset password</a>
+      {% elif mode == "forgot" or mode == "reset" %}
+        <a href="/login">Back to login</a>
+      {% else %}
+        <a href="/login">Already have an account?</a>
+      {% endif %}
+    </nav>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+  {% if (mode == "signup" or mode == "login") and settings.turnstile_site_key %}
+    <script>
+      window.onRevisiTurnstileLoad = () => {
+        document.querySelectorAll("[data-turnstile-widget]").forEach((container) => {
+          const input = container.closest("form")?.querySelector("[data-turnstile-response]");
+          if (!window.turnstile || !input || !container.dataset.sitekey) return;
+          window.turnstile.render(container, {
+            sitekey: container.dataset.sitekey,
+            callback: (token) => { input.value = token; },
+            "expired-callback": () => { input.value = ""; },
+            "error-callback": () => { input.value = ""; },
+          });
+        });
+      };
+    </script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onRevisiTurnstileLoad" async defer></script>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Finishing Revisi sign in{% endblock %}
+{% block main_class %}auth-root{% endblock %}
+
+{% block content %}
+<main class="auth-stage">
+  <section class="auth-sheet">
+    <p class="app-kicker">Account link</p>
+    <h1>Finishing sign in.</h1>
+    <p class="field-note" id="auth-callback-status">Reading the account link.</p>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (() => {
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const status = document.getElementById("auth-callback-status");
+    if (!hash.get("access_token") || !hash.get("refresh_token")) {
+      window.location.replace("/login?flash=That%20email%20link%20is%20invalid%20or%20expired.");
+      return;
+    }
+    fetch("/auth/session-from-fragment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(Object.fromEntries(hash.entries())),
+    })
+      .then(async (response) => ({ response, data: await response.json() }))
+      .then(({ data }) => window.location.replace(data.redirectTo || "/login"))
+      .catch(() => {
+        if (status) status.textContent = "That account link could not be finished.";
+      });
+  })();
+</script>
+{% endblock %}

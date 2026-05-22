@@ -52,6 +52,14 @@ def _ensure_existing_schema() -> None:
         statements.append("ALTER TABLE issues ADD COLUMN line_id VARCHAR(16)")
     if "rewrites" in table_names and "line_id" not in {column["name"] for column in inspector.get_columns("rewrites")}:
         statements.append("ALTER TABLE rewrites ADD COLUMN line_id VARCHAR(16)")
+    if "scans" in table_names:
+        scan_columns = {column["name"] for column in inspector.get_columns("scans")}
+        if "user_id" not in scan_columns:
+            statements.append("ALTER TABLE scans ADD COLUMN user_id VARCHAR(36)")
+        if "site_id" not in scan_columns:
+            statements.append("ALTER TABLE scans ADD COLUMN site_id INTEGER")
+        if "scan_mode" not in scan_columns:
+            statements.append("ALTER TABLE scans ADD COLUMN scan_mode VARCHAR(32) DEFAULT 'free'")
 
     if not statements:
         return

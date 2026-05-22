@@ -69,6 +69,410 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.auth-root,
+.revisi-app-root {
+  min-height: 100vh;
+  background: #fafafa;
+  color: #0a0a0a;
+  letter-spacing: 0;
+}
+
+.auth-stage {
+  width: min(560px, calc(100% - 48px));
+  min-height: 100vh;
+  margin: 0 auto;
+  display: grid;
+  align-content: center;
+  gap: 24px;
+  padding: 48px 0;
+}
+
+.auth-brand {
+  width: max-content;
+}
+
+.auth-sheet,
+.site-create,
+.guide-editor {
+  border: 1px solid #0a0a0a;
+  background: #fafafa;
+}
+
+.auth-sheet {
+  display: grid;
+  gap: 18px;
+  padding: 40px;
+}
+
+.auth-sheet h1,
+.app-lead h1,
+.site-head h1 {
+  font-family: "Space Grotesk", var(--sans);
+  font-size: 36px;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.app-kicker {
+  color: #737373;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.app-kicker::before {
+  width: 6px;
+  height: 6px;
+  display: inline-block;
+  margin-right: 10px;
+  background: #ff2d6f;
+  content: "";
+}
+
+.auth-flash,
+.app-flash {
+  border: 1px solid #d4d4d4;
+  background: #f4f4f4;
+  padding: 12px 14px;
+  color: #1a1a1a;
+}
+
+.auth-error {
+  border: 1px solid #d61f59;
+  background: #fff3f7;
+  padding: 12px 14px;
+  color: #8e123e;
+}
+
+.app-form {
+  display: grid;
+  gap: 14px;
+}
+
+.app-form h2,
+.site-list h2,
+.history-band h2 {
+  font-family: "Space Grotesk", var(--sans);
+  font-size: 20px;
+  letter-spacing: 0;
+}
+
+.app-form label,
+.scan-runner label {
+  display: grid;
+  gap: 7px;
+}
+
+.app-form label span,
+.scan-runner label span {
+  color: #525252;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app-form input,
+.app-form textarea,
+.scan-runner select {
+  width: 100%;
+  border: 1px solid #d4d4d4;
+  border-radius: 0;
+  background: #fafafa;
+  color: #0a0a0a;
+  padding: 12px;
+}
+
+.app-form input:focus,
+.app-form textarea:focus,
+.scan-runner select:focus {
+  outline: 2px solid #ff2d6f;
+  outline-offset: 1px;
+}
+
+.field-note,
+.auth-links {
+  color: #525252;
+  font-size: 14px;
+}
+
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.auth-links a {
+  border-bottom: 1px solid #0a0a0a;
+}
+
+.app-button,
+.app-user button {
+  min-height: 42px;
+  border: 1px solid #0a0a0a;
+  border-radius: 0;
+  background: #fafafa;
+  color: #0a0a0a;
+  padding: 10px 15px;
+  font-weight: 600;
+}
+
+.app-button.primary {
+  border-color: #ff2d6f;
+  background: #ff2d6f;
+  color: #fafafa;
+}
+
+.app-button:hover,
+.app-user button:hover {
+  background: #0a0a0a;
+  color: #fafafa;
+}
+
+.app-button.primary:hover {
+  border-color: #d61f59;
+  background: #d61f59;
+}
+
+.turnstile-field {
+  min-height: 65px;
+}
+
+.app-desk {
+  min-height: 100vh;
+}
+
+.app-bar {
+  min-height: 72px;
+  border-bottom: 1px solid #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px clamp(24px, 4vw, 56px);
+}
+
+.app-user,
+.app-user form {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.app-user {
+  color: #525252;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  font-size: 14px;
+}
+
+.app-user a {
+  color: #0a0a0a;
+  text-decoration: underline;
+}
+
+.app-layout {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+  display: grid;
+  gap: 28px;
+  padding: 48px 0 72px;
+}
+
+.app-lead {
+  max-width: 660px;
+  display: grid;
+  gap: 12px;
+}
+
+.app-lead p:last-child,
+.site-head p:last-child {
+  color: #525252;
+  font-size: 17px;
+}
+
+.site-board,
+.site-grid {
+  border-top: 1px solid #0a0a0a;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.7fr);
+}
+
+.site-list,
+.history-band {
+  border-right: 1px solid #0a0a0a;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 28px 28px 28px 0;
+}
+
+.site-create,
+.guide-editor {
+  border-width: 0 0 1px;
+  padding: 28px;
+}
+
+.site-row,
+.scan-row {
+  border: 1px solid #e5e5e5;
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.site-row:hover,
+.scan-row:hover {
+  border-color: #0a0a0a;
+  background: #f4f4f4;
+}
+
+.site-row strong {
+  font-family: "Space Grotesk", var(--sans);
+  font-size: 18px;
+}
+
+.site-row span,
+.site-row em,
+.scan-row span,
+.scan-row em {
+  color: #525252;
+  font-style: normal;
+}
+
+.site-row em {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.app-empty {
+  border: 1px dashed #d4d4d4;
+  color: #525252;
+  padding: 24px;
+}
+
+.site-layout {
+  gap: 24px;
+}
+
+.site-head {
+  border-bottom: 1px solid #e5e5e5;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 28px;
+  padding-bottom: 28px;
+}
+
+.scan-runner {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+}
+
+.scan-runner select {
+  min-width: 148px;
+}
+
+.band-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.band-head strong {
+  color: #ff2d6f;
+  font-family: "Space Grotesk", var(--sans);
+  font-size: 44px;
+  line-height: 1;
+}
+
+.band-head small {
+  color: #737373;
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scan-row {
+  grid-template-columns: minmax(150px, 1fr) 86px 100px 72px;
+  align-items: center;
+  gap: 14px;
+}
+
+.scan-row strong {
+  font-size: 24px;
+}
+
+.scan-row b {
+  color: #19703a;
+  text-align: right;
+}
+
+.scan-row b.down {
+  color: #a61a49;
+}
+
+.locked-guide .drop,
+.locked-guide textarea {
+  opacity: 0.72;
+}
+
+.guide-upgrade {
+  width: max-content;
+  border: 1px solid var(--garden-ink);
+  display: inline-flex;
+  padding: 10px 14px;
+  font-weight: 600;
+}
+
+.rewrite-strip.paid-lock p {
+  color: #525252;
+}
+
+@media (max-width: 860px) {
+  .app-layout {
+    width: calc(100% - 32px);
+    padding-top: 32px;
+  }
+
+  .site-board,
+  .site-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .site-list,
+  .history-band {
+    border-right: 0;
+    padding-right: 0;
+  }
+
+  .site-create,
+  .guide-editor {
+    border-top: 1px solid #0a0a0a;
+    padding-inline: 0;
+  }
+
+  .site-head,
+  .scan-runner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .scan-row {
+    grid-template-columns: 1fr auto;
+  }
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

@@ -5,18 +5,33 @@ import logging
 import xml.etree.ElementTree as ET
 from urllib import robotparser
 import time
-from urllib.parse import urljoin, urlparse, urlunparse
+from urllib.parse import urlencode, urljoin, urlparse, urlunparse
 from uuid import uuid4
 
 from bs4 import BeautifulSoup
 import httpx
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from starlette.middleware.sessions import SessionMiddleware
 
 from . import models
+from .auth import (
+    AuthError,
+    CAPTCHA_ERROR_MESSAGE,
+    create_app_session_from_tokens,
+    get_current_user,
+    logout_user,
+    password_confirmation_error,
+    password_validation_error,
+    request_password_reset,
+    sign_in_with_password,
+    sign_up_with_password,
+    update_current_user_password,
+    verify_email_otp,
+)
 from .config import get_settings
 from .database import SessionLocal, get_db, init_db
 from .schemas import AuditResult, ExtractedPage
@@ -58,6 +73,12 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Brand Voice Auditor", lifespan=lifespan)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=get_settings().session_secret,
+    same_site="lax",
+    https_only=get_settings().is_production,
+)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
@@ -118,9 +139,8 @@ async def scan(
             status_code=429,
         )
 
-    uploaded_voice = await _read_brand_voice_file(brand_voice_file)
     job_id = _create_scan_job()
-    background_tasks.add_task(_run_scan_job, job_id, url, depth, brand_voice, uploaded_voice)
+    background_tasks.add_task(_run_scan_job, job_id, url, "scan", "", "", "free")
     return JSONResponse({"job_id": job_id}, status_code=202)
 
 
@@ -155,13 +175,12 @@ async def scan_sync(
         )
 
     try:
-        uploaded_voice = await _read_brand_voice_file(brand_voice_file)
-        scan_model = await _perform_scan(url, depth, brand_voice, uploaded_voice, db)
+        scan_model = await _perform_scan(url, "scan", "", "", db, scan_mode="free")
     except (ValueError, FetchError, RuntimeError) as exc:
         return templates.TemplateResponse(
             request,
             "index.html",
-            {"seo": _seo_context(request), "error": str(exc), "url": url, "brand_voice": brand_voice},
+            {"seo": _seo_context(request), "error": str(exc), "url": url},
             status_code=400,
         )
     except Exception as exc:
@@ -173,7 +192,6 @@ async def scan_sync(
                 "error": "The scan failed unexpectedly. Check the deployment logs for the Python traceback.",
                 "seo": _seo_context(request),
                 "url": url,
-                "brand_voice": brand_voice,
             },
             status_code=500,
         )
@@ -191,6 +209,8 @@ def result(request: Request, public_token: str, page_id: int | None = None, db: 
     scan_model = db.query(models.Scan).filter(models.Scan.public_token == public_token).first()
     if not scan_model:
         raise HTTPException(status_code=404, detail="Scan not found")
+    if scan_model.scan_mode == "paid_app":
+        raise HTTPException(status_code=404, detail="Scan not found")
     return templates.TemplateResponse(
         request,
         "result.html",
@@ -199,11 +219,394 @@ def result(request: Request, public_token: str, page_id: int | None = None, db: 
     )
 
 
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request, current_user: models.User | None = Depends(get_current_user)) -> Response:
+    if current_user is not None:
+        return RedirectResponse("/app", status_code=303)
+    return _auth_response(request, "login", flash=request.query_params.get("flash"))
+
+
+@app.post("/login")
+def login_action(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    captcha_token: str = Form("", alias="cf-turnstile-response"),
+    revisi_captcha_token: str = Form("", alias="revisi-turnstile-response"),
+    db: Session = Depends(get_db),
+) -> Response:
+    normalized_email = email.strip().lower()
+    normalized_token = captcha_token.strip() or revisi_captcha_token.strip()
+    if not normalized_token:
+        return _auth_response(request, "login", error=CAPTCHA_ERROR_MESSAGE, values={"email": normalized_email}, status_code=400)
+    try:
+        sign_in_with_password(request, db, normalized_email, password, normalized_token)
+    except AuthError as exc:
+        return _auth_response(request, "login", error=exc.user_message, values={"email": normalized_email}, status_code=400)
+    return RedirectResponse("/app", status_code=303)
+
+
+@app.get("/signup", response_class=HTMLResponse)
+def signup_page(request: Request, current_user: models.User | None = Depends(get_current_user)) -> Response:
+    if current_user is not None:
+        return RedirectResponse("/app", status_code=303)
+    return _auth_response(request, "signup")
+
+
+@app.post("/signup")
+def signup_action(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    captcha_token: str = Form("", alias="cf-turnstile-response"),
+    revisi_captcha_token: str = Form("", alias="revisi-turnstile-response"),
+    db: Session = Depends(get_db),
+) -> Response:
+    normalized_email = email.strip().lower()
+    normalized_token = captcha_token.strip() or revisi_captcha_token.strip()
+    password_error = password_validation_error(password)
+    confirmation_error = password_confirmation_error(password, confirm_password)
+    error = password_error or confirmation_error or (CAPTCHA_ERROR_MESSAGE if not normalized_token else None)
+    if error:
+        return _auth_response(request, "signup", error=error, values={"email": normalized_email}, status_code=400)
+    try:
+        sign_up_with_password(request, db, normalized_email, password, normalized_token)
+    except AuthError as exc:
+        return _auth_response(request, "signup", error=exc.user_message, values={"email": normalized_email}, status_code=400)
+    return RedirectResponse("/app", status_code=303)
+
+
+@app.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password_page(request: Request) -> HTMLResponse:
+    return _auth_response(request, "forgot")
+
+
+@app.post("/forgot-password")
+def forgot_password_action(request: Request, email: str = Form(...)) -> Response:
+    normalized_email = email.strip().lower()
+    try:
+        request_password_reset(normalized_email)
+    except AuthError as exc:
+        return _auth_response(request, "forgot", error=exc.user_message, values={"email": normalized_email}, status_code=400)
+    return _redirect_with_flash("/login", "If that email matches, a reset link is on its way.")
+
+
+@app.get("/reset-password", response_class=HTMLResponse)
+def reset_password_page(request: Request, current_user: models.User | None = Depends(get_current_user)) -> Response:
+    if current_user is None:
+        return _redirect_with_flash("/forgot-password", "Request a new password reset link to continue.")
+    return _auth_response(request, "reset", flash=request.query_params.get("flash"))
+
+
+@app.post("/reset-password")
+def reset_password_action(
+    request: Request,
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    db: Session = Depends(get_db),
+) -> Response:
+    error = password_validation_error(password) or password_confirmation_error(password, confirm_password)
+    if error:
+        return _auth_response(request, "reset", error=error, status_code=400)
+    try:
+        update_current_user_password(request, db, password)
+    except AuthError as exc:
+        return _auth_response(request, "reset", error=exc.user_message, status_code=400)
+    return _redirect_with_flash("/app", "Password updated.")
+
+
+@app.get("/auth/callback")
+def auth_callback(request: Request, db: Session = Depends(get_db)) -> Response:
+    token_hash = request.query_params.get("token_hash")
+    otp_type = request.query_params.get("type", "email")
+    if token_hash:
+        try:
+            verify_email_otp(request, db, token_hash, otp_type)
+        except AuthError as exc:
+            return _redirect_with_flash("/login", exc.user_message)
+        if otp_type == "recovery":
+            return _redirect_with_flash("/reset-password", "Choose a new password to finish the reset.")
+        return _redirect_with_flash("/app", "Email confirmed.")
+    return templates.TemplateResponse(
+        request,
+        "auth_callback.html",
+        {"seo": _seo_context(request, title="Finishing Revisi sign in", robots="noindex, nofollow")},
+    )
+
+
+@app.post("/auth/session-from-fragment")
+async def auth_session_from_fragment(request: Request, db: Session = Depends(get_db)) -> JSONResponse:
+    payload = await request.json()
+    access_token = payload.get("access_token")
+    refresh_token = payload.get("refresh_token")
+    raw_expires_in = payload.get("expires_in")
+    if not isinstance(access_token, str) or not isinstance(refresh_token, str):
+        return JSONResponse({"ok": False, "redirectTo": "/login"}, status_code=400)
+    expires_in = int(raw_expires_in) if isinstance(raw_expires_in, str) and raw_expires_in.isdigit() else raw_expires_in
+    try:
+        create_app_session_from_tokens(
+            request,
+            db,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_in=expires_in if isinstance(expires_in, int) else None,
+        )
+    except AuthError as exc:
+        return JSONResponse({"ok": False, "redirectTo": f"/login?{urlencode({'flash': exc.user_message})}"}, status_code=400)
+    recovery = payload.get("type") == "recovery"
+    target = "/reset-password" if recovery else "/app"
+    return JSONResponse({"ok": True, "redirectTo": target})
+
+
+@app.post("/logout")
+def logout_action(request: Request, db: Session = Depends(get_db)) -> RedirectResponse:
+    logout_user(request, db)
+    return RedirectResponse("/", status_code=303)
+
+
+@app.get("/app", response_class=HTMLResponse)
+def app_home(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User | None = Depends(get_current_user),
+) -> Response:
+    if current_user is None:
+        return RedirectResponse("/login", status_code=303)
+    sites = db.query(models.Site).filter(models.Site.user_id == current_user.id).order_by(models.Site.updated_at.desc()).all()
+    return templates.TemplateResponse(
+        request,
+        "app_home.html",
+        _app_context(request, current_user, sites=sites),
+    )
+
+
+@app.post("/app/sites")
+def create_site(
+    request: Request,
+    name: str = Form(""),
+    url: str = Form(...),
+    brand_voice: str = Form(""),
+    db: Session = Depends(get_db),
+    current_user: models.User | None = Depends(get_current_user),
+) -> Response:
+    if current_user is None:
+        return RedirectResponse("/login", status_code=303)
+    try:
+        base_url = normalize_url(url)
+    except ValueError as exc:
+        sites = db.query(models.Site).filter(models.Site.user_id == current_user.id).order_by(models.Site.updated_at.desc()).all()
+        return templates.TemplateResponse(
+            request,
+            "app_home.html",
+            _app_context(request, current_user, sites=sites, error=str(exc), site_values={"name": name, "url": url, "brand_voice": brand_voice}),
+            status_code=400,
+        )
+    parsed = urlparse(base_url)
+    site = models.Site(
+        user=current_user,
+        name=name.strip() or parsed.netloc,
+        base_url=base_url,
+        domain=parsed.netloc.lower(),
+        brand_voice_text=brand_voice.strip() or None,
+    )
+    db.add(site)
+    db.commit()
+    db.refresh(site)
+    return RedirectResponse(f"/app/sites/{site.id}", status_code=303)
+
+
+@app.get("/app/sites/{site_id}", response_class=HTMLResponse)
+def site_detail(
+    request: Request,
+    site_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User | None = Depends(get_current_user),
+) -> Response:
+    if current_user is None:
+        return RedirectResponse("/login", status_code=303)
+    site = _owned_site(db, current_user, site_id)
+    return _site_response(request, current_user, site)
+
+
+@app.post("/app/sites/{site_id}/guide")
+def update_site_guide(
+    request: Request,
+    site_id: int,
+    brand_voice: str = Form(""),
+    db: Session = Depends(get_db),
+    current_user: models.User | None = Depends(get_current_user),
+) -> Response:
+    if current_user is None:
+        return RedirectResponse("/login", status_code=303)
+    site = _owned_site(db, current_user, site_id)
+    site.brand_voice_text = brand_voice.strip() or None
+    db.commit()
+    return _redirect_with_flash(f"/app/sites/{site.id}", "Brand voice guide updated.")
+
+
+@app.post("/app/sites/{site_id}/scan")
+async def scan_site(
+    request: Request,
+    site_id: int,
+    depth: str = Form("site"),
+    db: Session = Depends(get_db),
+    current_user: models.User | None = Depends(get_current_user),
+) -> Response:
+    if current_user is None:
+        return RedirectResponse("/login", status_code=303)
+    site = _owned_site(db, current_user, site_id)
+    try:
+        scan_model = await _perform_scan(
+            site.base_url,
+            depth,
+            site.brand_voice_text or "",
+            "",
+            db,
+            user=current_user,
+            site=site,
+            scan_mode="paid_app",
+        )
+    except (ValueError, FetchError, RuntimeError) as exc:
+        return _site_response(request, current_user, site, error=str(exc), status_code=400)
+    return RedirectResponse(f"/app/sites/{site.id}/scans/{scan_model.id}", status_code=303)
+
+
+@app.get("/app/sites/{site_id}/scans/{scan_id}", response_class=HTMLResponse)
+def app_scan_report(
+    request: Request,
+    site_id: int,
+    scan_id: int,
+    page_id: int | None = None,
+    db: Session = Depends(get_db),
+    current_user: models.User | None = Depends(get_current_user),
+) -> Response:
+    if current_user is None:
+        return RedirectResponse("/login", status_code=303)
+    site = _owned_site(db, current_user, site_id)
+    scan_model = (
+        db.query(models.Scan)
+        .filter(models.Scan.id == scan_id, models.Scan.site_id == site.id, models.Scan.user_id == current_user.id)
+        .first()
+    )
+    if scan_model is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    return templates.TemplateResponse(
+        request,
+        "result.html",
+        _result_template_context(scan_model, page_id=page_id)
+        | {
+            "app_report": True,
+            "report_path": f"/app/sites/{site.id}/scans/{scan_model.id}",
+            "report_back_url": f"/app/sites/{site.id}",
+            "seo": _seo_context(request, title="Revisi App Audit Report", robots="noindex, nofollow"),
+        },
+    )
+
+
 def _public_site_url(request: Request) -> str:
     configured_url = get_settings().public_site_url
     if configured_url:
         return configured_url.rstrip("/")
     return f"{request.url.scheme}://{request.url.netloc}".rstrip("/")
+
+
+def _auth_response(
+    request: Request,
+    mode: str,
+    *,
+    error: str | None = None,
+    flash: str | None = None,
+    values: dict | None = None,
+    status_code: int = 200,
+) -> HTMLResponse:
+    titles = {
+        "login": "Log in to Revisi",
+        "signup": "Create Revisi account",
+        "forgot": "Reset Revisi password",
+        "reset": "Choose new password",
+    }
+    return templates.TemplateResponse(
+        request,
+        "auth.html",
+        {
+            "mode": mode,
+            "error": error,
+            "flash": flash,
+            "values": values or {},
+            "settings": get_settings(),
+            "seo": _seo_context(request, title=titles.get(mode, "Revisi account"), robots="noindex, nofollow"),
+        },
+        status_code=status_code,
+    )
+
+
+def _redirect_with_flash(path: str, flash: str) -> RedirectResponse:
+    separator = "&" if "?" in path else "?"
+    return RedirectResponse(f"{path}{separator}{urlencode({'flash': flash})}", status_code=303)
+
+
+def _app_context(request: Request, current_user: models.User, **values) -> dict:
+    return {
+        "current_user": current_user,
+        "flash": request.query_params.get("flash"),
+        "seo": _seo_context(request, title="Revisi App", robots="noindex, nofollow"),
+    } | values
+
+
+def _owned_site(db: Session, current_user: models.User, site_id: int) -> models.Site:
+    site = db.query(models.Site).filter(models.Site.id == site_id, models.Site.user_id == current_user.id).first()
+    if site is None:
+        raise HTTPException(status_code=404, detail="Site not found")
+    return site
+
+
+def _site_response(
+    request: Request,
+    current_user: models.User,
+    site: models.Site,
+    *,
+    error: str | None = None,
+    status_code: int = 200,
+) -> HTMLResponse:
+    scans = list(site.scans or [])
+    scan_rows = _scan_history_rows(scans)
+    return templates.TemplateResponse(
+        request,
+        "site_detail.html",
+        _app_context(
+            request,
+            current_user,
+            site=site,
+            scan_rows=scan_rows,
+            latest_scan=scan_rows[0] if scan_rows else None,
+            error=error,
+        ),
+        status_code=status_code,
+    )
+
+
+def _scan_history_rows(scans: list[models.Scan]) -> list[dict]:
+    rows = []
+    for index, scan_model in enumerate(scans):
+        score = _scan_score(scan_model)
+        previous_score = _scan_score(scans[index + 1]) if index + 1 < len(scans) else None
+        rows.append(
+            {
+                "scan": scan_model,
+                "score": score,
+                "page_count": len(scan_model.page_results or []),
+                "delta": None if previous_score is None else score - previous_score,
+            }
+        )
+    return rows
+
+
+def _scan_score(scan_model: models.Scan) -> int:
+    pages = list(scan_model.page_results or [])
+    if not pages:
+        return 0
+    return round(sum(page.overall_score for page in pages) / len(pages))
 
 
 def _absolute_url(request: Request, path: str = "/") -> str:
@@ -280,14 +683,18 @@ async def _perform_scan(
     uploaded_voice: str,
     db: Session,
     job_id: str | None = None,
+    *,
+    user: models.User | None = None,
+    site: models.Site | None = None,
+    scan_mode: str = "paid_app",
 ) -> models.Scan:
     _start_job_step(job_id, "validate")
     normalized_url = normalize_url(submitted_url)
-    scan_depth = _normalize_scan_depth(depth)
+    scan_depth = "scan" if scan_mode == "free" else _normalize_scan_depth(depth)
     _finish_job_step(job_id, "validate")
 
     _start_job_step(job_id, "guide")
-    brand_voice_text = (uploaded_voice or brand_voice or "").strip() or None
+    brand_voice_text = None if scan_mode == "free" else (uploaded_voice or brand_voice or "").strip() or None
     _finish_job_step(job_id, "guide")
 
     _start_job_step(job_id, "fetch")
@@ -324,9 +731,13 @@ async def _perform_scan(
 
     _start_job_step(job_id, "models")
     results = [
-        await asyncio.to_thread(analyze_page, page, brand_voice_text)
+        await asyncio.to_thread(analyze_page, page, brand_voice_text, False)
+        if scan_mode == "free"
+        else await asyncio.to_thread(analyze_page, page, brand_voice_text)
         for page in pages
     ]
+    if scan_mode == "free":
+        results = [_diagnostic_result(result) for result in results]
     _finish_job_step(job_id, "models")
 
     _start_job_step(job_id, "ground")
@@ -336,7 +747,16 @@ async def _perform_scan(
     _finish_job_step(job_id, "score")
 
     _start_job_step(job_id, "save")
-    scan_model = _save_scan_pages(db, submitted_url, normalized_url, brand_voice_text, list(zip(pages, results)))
+    scan_model = _save_scan_pages(
+        db,
+        submitted_url,
+        normalized_url,
+        brand_voice_text,
+        list(zip(pages, results)),
+        user=user,
+        site=site,
+        scan_mode=scan_mode,
+    )
     _finish_job_step(job_id, "save")
 
     _start_job_step(job_id, "finish")
@@ -392,11 +812,18 @@ def _extracted_word_count(page: ExtractedPage) -> int:
     return len(page.combined_text.split())
 
 
-async def _run_scan_job(job_id: str, url: str, depth: str, brand_voice: str, uploaded_voice: str) -> None:
+async def _run_scan_job(
+    job_id: str,
+    url: str,
+    depth: str,
+    brand_voice: str,
+    uploaded_voice: str,
+    scan_mode: str = "free",
+) -> None:
     _mark_job_running(job_id)
     db = SessionLocal()
     try:
-        scan_model = await _perform_scan(url, depth, brand_voice, uploaded_voice, db, job_id)
+        scan_model = await _perform_scan(url, depth, brand_voice, uploaded_voice, db, job_id, scan_mode=scan_mode)
         _complete_job(job_id, f"/r/{scan_model.public_token}")
     except (ValueError, FetchError, RuntimeError) as exc:
         _fail_job(job_id, str(exc))
@@ -731,16 +1158,31 @@ def _save_scan(
     return _save_scan_pages(db, submitted_url, normalized_url, brand_voice_text, [(page, result)])
 
 
+def _diagnostic_result(result: AuditResult) -> AuditResult:
+    issues = [
+        issue.model_copy(update={"suggested_rewrite": ""})
+        for issue in result.top_issues
+    ]
+    return result.model_copy(update={"top_issues": issues, "line_level_rewrites": []})
+
+
 def _save_scan_pages(
     db: Session,
     submitted_url: str,
     normalized_url: str,
     brand_voice_text: str | None,
     page_results: list[tuple[object, AuditResult]],
+    *,
+    user: models.User | None = None,
+    site: models.Site | None = None,
+    scan_mode: str = "free",
 ) -> models.Scan:
     scan_model = models.Scan(
         submitted_url=submitted_url,
         normalized_url=normalized_url,
+        user=user,
+        site=site,
+        scan_mode=scan_mode,
         brand_voice_source="provided" if brand_voice_text else "inferred voice, not confirmed",
         brand_voice_text=brand_voice_text,
     )
