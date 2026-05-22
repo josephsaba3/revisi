@@ -23,14 +23,43 @@ class LLMProviderRateLimitError(LLMProviderError):
 
 def provider_has_credentials(settings: Settings) -> bool:
     if settings.llm_provider == "anthropic":
-        return bool(settings.anthropic_api_key)
+        return bool(settings.anthropic_api_key or _openai_fallback_available(settings))
     return bool(settings.openai_api_key)
 
 
 def request_structured_audit(settings: Settings, analysis_prompt: str, payload: dict) -> AuditResult | None:
     if settings.llm_provider == "anthropic":
-        return _request_anthropic_audit(settings, analysis_prompt, payload)
+        return _request_anthropic_with_openai_fallback(settings, analysis_prompt, payload)
     return _request_openai_audit(settings, analysis_prompt, payload)
+
+
+def _request_anthropic_with_openai_fallback(
+    settings: Settings,
+    analysis_prompt: str,
+    payload: dict,
+) -> AuditResult | None:
+    if not settings.anthropic_api_key:
+        if _openai_fallback_available(settings):
+            return _request_openai_audit(settings, analysis_prompt, payload)
+        raise LLMProviderError("Anthropic API key is not configured")
+
+    try:
+        result = _request_anthropic_audit(settings, analysis_prompt, payload)
+    except LLMProviderError:
+        if not _openai_fallback_available(settings):
+            raise
+        logger.warning("Anthropic audit request failed; trying OpenAI fallback", exc_info=True)
+        return _request_openai_audit(settings, analysis_prompt, payload)
+
+    if result is not None or not _openai_fallback_available(settings):
+        return result
+
+    logger.warning("Anthropic returned no structured audit result; trying OpenAI fallback")
+    return _request_openai_audit(settings, analysis_prompt, payload)
+
+
+def _openai_fallback_available(settings: Settings) -> bool:
+    return settings.anthropic_openai_fallback_enabled and bool(settings.openai_api_key)
 
 
 def _request_openai_audit(settings: Settings, analysis_prompt: str, payload: dict) -> AuditResult | None:

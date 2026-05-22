@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     anthropic_max_tokens: int = 12000
     anthropic_effort: Literal["", "low", "medium", "high", "max"] = "medium"
     anthropic_prompt_cache_enabled: bool = True
+    anthropic_openai_fallback_enabled: bool = True
     request_timeout_seconds: float = 15.0
     firecrawl_api_key: str | None = None
     firecrawl_fallback_enabled: bool = True

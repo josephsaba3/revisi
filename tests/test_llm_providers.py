@@ -170,3 +170,79 @@ def test_anthropic_provider_omits_blank_effort_for_haiku(monkeypatch) -> None:
     assert result == parsed_result
     assert call_kwargs["model"] == "claude-haiku-4-5-20251001"
     assert "output_config" not in call_kwargs
+
+
+def test_anthropic_provider_falls_back_to_openai_on_provider_error(monkeypatch) -> None:
+    parsed_result = _audit_result()
+    calls = []
+
+    def fake_anthropic(*_args, **_kwargs):
+        calls.append("anthropic")
+        raise llm_providers.LLMProviderError("anthropic overloaded")
+
+    def fake_openai(*_args, **_kwargs):
+        calls.append("openai")
+        return parsed_result
+
+    monkeypatch.setattr(llm_providers, "_request_anthropic_audit", fake_anthropic)
+    monkeypatch.setattr(llm_providers, "_request_openai_audit", fake_openai)
+
+    result = llm_providers.request_structured_audit(
+        Settings(
+            llm_provider="anthropic",
+            anthropic_api_key="anthropic-test",
+            openai_api_key="openai-test",
+        ),
+        "Private prompt",
+        {"page": {"url": "https://example.com"}},
+    )
+
+    assert result == parsed_result
+    assert calls == ["anthropic", "openai"]
+
+
+def test_anthropic_provider_falls_back_to_openai_without_anthropic_key(monkeypatch) -> None:
+    parsed_result = _audit_result()
+    calls = []
+
+    def fake_openai(*_args, **_kwargs):
+        calls.append("openai")
+        return parsed_result
+
+    monkeypatch.setattr(llm_providers, "_request_openai_audit", fake_openai)
+
+    settings = Settings(llm_provider="anthropic", openai_api_key="openai-test")
+    result = llm_providers.request_structured_audit(
+        settings,
+        "Private prompt",
+        {"page": {"url": "https://example.com"}},
+    )
+
+    assert llm_providers.provider_has_credentials(settings)
+    assert result == parsed_result
+    assert calls == ["openai"]
+
+
+def test_anthropic_provider_can_disable_openai_fallback(monkeypatch) -> None:
+    def fake_anthropic(*_args, **_kwargs):
+        raise llm_providers.LLMProviderError("anthropic overloaded")
+
+    monkeypatch.setattr(llm_providers, "_request_anthropic_audit", fake_anthropic)
+
+    settings = Settings(
+        llm_provider="anthropic",
+        anthropic_api_key="anthropic-test",
+        openai_api_key="openai-test",
+        anthropic_openai_fallback_enabled=False,
+    )
+
+    try:
+        llm_providers.request_structured_audit(
+            settings,
+            "Private prompt",
+            {"page": {"url": "https://example.com"}},
+        )
+    except llm_providers.LLMProviderError:
+        pass
+    else:
+        raise AssertionError("Expected Anthropic failure without OpenAI fallback")

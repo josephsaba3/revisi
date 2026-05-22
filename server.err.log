@@ -112,3 +112,19 @@ INFO:     Started server process [22412]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 WARNING:  WatchFiles detected changes in 'app\schemas.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22412]
+WARNING:  WatchFiles detected changes in 'tests\test_analyzer.py', 'app\schemas.py', 'app\services\analyzer.py'. Reloading...
+INFO:     Started server process [1984]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [1984]
+INFO:     Started server process [27576]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app\config.py'. Reloading...
