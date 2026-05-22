@@ -375,10 +375,11 @@ def app_home(
     if current_user is None:
         return RedirectResponse("/login", status_code=303)
     sites = db.query(models.Site).filter(models.Site.user_id == current_user.id).order_by(models.Site.updated_at.desc()).all()
+    site_rows = _site_summary_rows(sites)
     return templates.TemplateResponse(
         request,
         "app_home.html",
-        _app_context(request, current_user, sites=sites),
+        _app_context(request, current_user, sites=sites, site_rows=site_rows, workspace_summary=_workspace_summary(site_rows)),
     )
 
 
@@ -399,10 +400,19 @@ async def create_site(
         uploaded_guide = await _read_markdown_guide_file(brand_voice_file)
     except ValueError as exc:
         sites = db.query(models.Site).filter(models.Site.user_id == current_user.id).order_by(models.Site.updated_at.desc()).all()
+        site_rows = _site_summary_rows(sites)
         return templates.TemplateResponse(
             request,
             "app_home.html",
-            _app_context(request, current_user, sites=sites, error=str(exc), site_values={"name": name, "url": url, "brand_voice": brand_voice}),
+            _app_context(
+                request,
+                current_user,
+                sites=sites,
+                site_rows=site_rows,
+                workspace_summary=_workspace_summary(site_rows),
+                error=str(exc),
+                site_values={"name": name, "url": url, "brand_voice": brand_voice},
+            ),
             status_code=400,
         )
     parsed = urlparse(base_url)
@@ -603,6 +613,33 @@ def _scan_history_rows(scans: list[models.Scan]) -> list[dict]:
             }
         )
     return rows
+
+
+def _site_summary_rows(sites: list[models.Site]) -> list[dict]:
+    rows = []
+    for site in sites:
+        latest_scan = site.scans[0] if site.scans else None
+        page_results = list(latest_scan.page_results or []) if latest_scan else []
+        rows.append(
+            {
+                "site": site,
+                "latest_scan": latest_scan,
+                "page_count": len(page_results),
+                "issue_count": sum(len(page.issues or []) for page in page_results),
+                "score": _scan_score(latest_scan) if latest_scan else None,
+            }
+        )
+    return rows
+
+
+def _workspace_summary(site_rows: list[dict]) -> dict[str, int | None]:
+    scored_rows = [row for row in site_rows if row["score"] is not None]
+    return {
+        "site_count": len(site_rows),
+        "page_count": sum(row["page_count"] for row in site_rows),
+        "issue_count": sum(row["issue_count"] for row in site_rows),
+        "score": round(sum(row["score"] for row in scored_rows) / len(scored_rows)) if scored_rows else None,
+    }
 
 
 def _scan_score(scan_model: models.Scan) -> int:

@@ -4,48 +4,114 @@
 {% block main_class %}revisi-app-root{% endblock %}
 
 {% block content %}
-<div class="app-desk">
-  <header class="app-bar">
-    <a href="/app" aria-label="Revisi app home"><img src="{{ url_for('static', path='/revisi-wordmark.svg') }}" alt="Revisi" width="103" height="40"></a>
-    <div class="app-user">
-      <span>{{ current_user.email }}</span>
-      <form method="post" action="/logout"><button type="submit">Log out</button></form>
+<div class="workspace-shell">
+  <header class="workspace-topbar">
+    <a class="workspace-brand" href="/app" aria-label="Revisi app home">
+      <img src="{{ url_for('static', path='/revisi-wordmark.svg') }}" alt="Revisi" width="103" height="40">
+    </a>
+    <div class="workspace-context">
+      <span>Workspace</span>
+      <strong>{{ current_user.email }}</strong>
+      <i></i>
+      <span>{{ workspace_summary.site_count }} site{% if workspace_summary.site_count != 1 %}s{% endif %}</span>
+      <span>{{ workspace_summary.page_count }} audited page{% if workspace_summary.page_count != 1 %}s{% endif %}</span>
     </div>
+    <form class="workspace-logout" method="post" action="/logout">
+      <button type="submit">Log out</button>
+    </form>
   </header>
-  <main class="app-layout">
-    <section class="app-lead">
-      <p class="app-kicker">Paid workspace</p>
-      <h1>Sites and audit runs.</h1>
-      <p>Store the voice guide once, run deeper scans, and keep the revision trail.</p>
-    </section>
-    {% if flash %}<p class="app-flash">{{ flash }}</p>{% endif %}
-    {% if error %}<p class="auth-error">{{ error }}</p>{% endif %}
-    <section class="site-board">
-      <div class="site-list">
-        <h2>Your sites</h2>
-        {% if sites %}
-          {% for site in sites %}
-            {% set latest = site.scans[0] if site.scans else None %}
-            <a class="site-row" href="/app/sites/{{ site.id }}">
-              <strong>{{ site.name }}</strong>
-              <span>{{ site.domain }}</span>
-              <em>{% if latest %}Last scanned {{ latest.created_at.strftime("%d %b %Y") }}{% else %}Ready for first scan{% endif %}</em>
-            </a>
+  <nav class="workspace-tabs" aria-label="Workspace">
+    <span class="workspace-tab active">Sites <b>{{ workspace_summary.site_count }}</b></span>
+  </nav>
+  <div class="workspace-grid">
+    <aside class="workspace-rail" aria-label="Workspace summary">
+      <section class="workspace-score">
+        <p>Workspace voice</p>
+        <strong>{% if workspace_summary.score is not none %}{{ workspace_summary.score }}{% else %}--{% endif %}</strong>
+        <span>/ 100</span>
+      </section>
+      <dl class="workspace-stats">
+        <div><dt>Sites</dt><dd>{{ workspace_summary.site_count }}</dd></div>
+        <div><dt>Pages</dt><dd>{{ workspace_summary.page_count }}</dd></div>
+        <div><dt>Flags</dt><dd>{{ workspace_summary.issue_count }}</dd></div>
+        <div><dt>Guides</dt><dd>{{ site_rows|selectattr("site.brand_voice_text")|list|length }}</dd></div>
+      </dl>
+      <section class="workspace-note">
+        <p>Voice guides stay with each site. Open a site to scan it, review its history, or update the guide.</p>
+      </section>
+    </aside>
+    <main class="workspace-main">
+      <header class="workspace-heading">
+        <div>
+          <h1>Your <span>sites</span>.</h1>
+          <p>{{ workspace_summary.site_count }} domain{% if workspace_summary.site_count != 1 %}s{% endif %} under audit. Scores and flags reflect the latest saved scan for each site.</p>
+        </div>
+        <a class="workspace-add" href="#add-site"><span>+</span> Add site</a>
+      </header>
+
+      {% if flash %}<p class="app-flash workspace-message">{{ flash }}</p>{% endif %}
+      {% if error %}<p class="auth-error workspace-message">{{ error }}</p>{% endif %}
+
+      <section class="workspace-table" aria-label="Your sites">
+        <div class="workspace-thead" aria-hidden="true">
+          <span></span>
+          <span>Site</span>
+          <span>Status</span>
+          <span>Pages</span>
+          <span>Flags</span>
+          <span>Last scan</span>
+          <span>Score</span>
+          <span>Actions</span>
+        </div>
+        {% if site_rows %}
+          {% for row in site_rows %}
+            <article class="workspace-row">
+              <span class="workspace-badge {% if row.score is not none and row.score >= 85 %}ink{% endif %}">{{ row.site.name[:2]|upper }}</span>
+              <div class="workspace-site">
+                <strong>{{ row.site.name }}</strong>
+                <span>{{ row.site.domain }}</span>
+              </div>
+              <div class="workspace-status {% if row.latest_scan %}scanned{% else %}ready{% endif %}">
+                <i></i>
+                <span>{% if row.latest_scan %}Audited{% else %}Ready{% endif %}</span>
+              </div>
+              <b class="workspace-count pages">{{ row.page_count }}</b>
+              <b class="workspace-count flags {% if row.issue_count %}flag{% endif %}">{{ row.issue_count }}</b>
+              <time class="workspace-date" {% if row.latest_scan %}datetime="{{ row.latest_scan.created_at.isoformat() }}"{% endif %}>
+                {% if row.latest_scan %}{{ row.latest_scan.created_at.strftime("%d %b, %H:%M") }}{% else %}First scan pending{% endif %}
+              </time>
+              <strong class="workspace-mini-score {% if row.score is not none and row.score < 70 %}flag{% endif %}">
+                {% if row.score is not none %}{{ row.score }}<small>/100</small>{% else %}--{% endif %}
+              </strong>
+              <div class="workspace-row-actions">
+                <form method="post" action="/app/sites/{{ row.site.id }}/scan">
+                  <input type="hidden" name="depth" value="site">
+                  <button type="submit">{% if row.latest_scan %}Re-scan{% else %}Run scan{% endif %}</button>
+                </form>
+                <a href="/app/sites/{{ row.site.id }}">Open</a>
+              </div>
+            </article>
           {% endfor %}
         {% else %}
-          <div class="app-empty">Add a site to start a paid audit run.</div>
+          <div class="workspace-empty">Add a site to start a paid audit run.</div>
         {% endif %}
-      </div>
-      <form class="app-form site-create" method="post" action="/app/sites" enctype="multipart/form-data">
-        <h2>Add site</h2>
-        <label><span>Name</span><input name="name" value="{{ site_values.name if site_values else '' }}" placeholder="Client or site name"></label>
-        <label><span>URL</span><input name="url" value="{{ site_values.url if site_values else '' }}" placeholder="example.com" required></label>
-        <label><span>Brand voice guide</span><textarea name="brand_voice" rows="8" placeholder="Paste the voice guide or the notes the audit should obey.">{{ site_values.brand_voice if site_values else '' }}</textarea></label>
-        <label><span>Upload Markdown guide</span><input name="brand_voice_file" type="file" accept=".md,text/markdown"></label>
-        <p class="field-note">Optional. `.md` files only. Uploaded Markdown replaces pasted guide text for this site.</p>
-        <button class="app-button primary" type="submit">Create site</button>
-      </form>
-    </section>
-  </main>
+      </section>
+
+      <section class="workspace-add-panel" id="add-site">
+        <header>
+          <p class="app-kicker">Add site</p>
+          <h2>Put another domain on the desk.</h2>
+        </header>
+        <form class="app-form site-create" method="post" action="/app/sites" enctype="multipart/form-data">
+          <label><span>Name</span><input name="name" value="{{ site_values.name if site_values else '' }}" placeholder="Client or site name"></label>
+          <label><span>URL</span><input name="url" value="{{ site_values.url if site_values else '' }}" placeholder="example.com" required></label>
+          <label class="workspace-guide"><span>Brand voice guide</span><textarea name="brand_voice" rows="6" placeholder="Paste the voice guide or the notes the audit should obey.">{{ site_values.brand_voice if site_values else '' }}</textarea></label>
+          <label><span>Upload Markdown guide</span><input name="brand_voice_file" type="file" accept=".md,text/markdown"></label>
+          <p class="field-note">Optional. `.md` files only. Uploaded Markdown replaces pasted guide text for this site.</p>
+          <button class="app-button primary" type="submit">Create site</button>
+        </form>
+      </section>
+    </main>
+  </div>
 </div>
 {% endblock %}

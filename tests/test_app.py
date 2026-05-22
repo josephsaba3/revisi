@@ -305,7 +305,12 @@ def test_app_site_workspace_lists_owned_sites(db_session) -> None:
         app.dependency_overrides.clear()
 
     assert response.status_code == 200
+    assert "Your" in response.text
+    assert "sites" in response.text
+    assert "Add site" in response.text
+    assert "Import sitemap" not in response.text
     assert "Client Site" in response.text
+    assert "First scan pending" in response.text
     assert "Other Site" not in response.text
     assert detail.status_code == 404
 
