@@ -88,6 +88,7 @@ def _analysis_payload(page: ExtractedPage, brand_voice: str | None) -> dict:
         "constraints": [
             "Use exactly one allowed_scoring_contexts value for scoring_context.",
             "Use 2-4 contextual modifiers.",
+            "Keep verdict under 80 characters.",
             "Return 3-6 top issues when possible.",
             "Return 3-6 line-level rewrites when possible.",
             "Keep issue_type as a short category label, not a sentence or copy excerpt.",

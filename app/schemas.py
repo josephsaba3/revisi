@@ -16,6 +16,12 @@ CORE_SCORE_KEYS = (
 Priority = Literal["High", "Medium", "Low"]
 
 
+def _trim_string(value: object, max_length: int) -> object:
+    if isinstance(value, str):
+        return value.strip()[:max_length]
+    return value
+
+
 class ScanRequest(BaseModel):
     url: HttpUrl
     brand_voice: str | None = None
@@ -62,9 +68,22 @@ class AuditIssue(BaseModel):
     @field_validator("issue_type", mode="before")
     @classmethod
     def keep_issue_type_short(cls, value: object) -> object:
-        if isinstance(value, str):
-            return value.strip()[:80]
-        return value
+        return _trim_string(value, 80)
+
+    @field_validator("source", mode="before")
+    @classmethod
+    def keep_source_short(cls, value: object) -> object:
+        return _trim_string(value, 80)
+
+    @field_validator("original_copy", mode="before")
+    @classmethod
+    def keep_original_copy_bounded(cls, value: object) -> object:
+        return _trim_string(value, 600)
+
+    @field_validator("explanation", "suggested_rewrite", mode="before")
+    @classmethod
+    def keep_issue_notes_bounded(cls, value: object) -> object:
+        return _trim_string(value, 800)
 
 
 class RewriteSuggestion(BaseModel):
@@ -73,6 +92,26 @@ class RewriteSuggestion(BaseModel):
     original: str = Field(max_length=600)
     rewrite: str = Field(max_length=800)
     reason: str = Field(max_length=500)
+
+    @field_validator("source", mode="before")
+    @classmethod
+    def keep_source_short(cls, value: object) -> object:
+        return _trim_string(value, 80)
+
+    @field_validator("original", mode="before")
+    @classmethod
+    def keep_original_bounded(cls, value: object) -> object:
+        return _trim_string(value, 600)
+
+    @field_validator("rewrite", mode="before")
+    @classmethod
+    def keep_rewrite_bounded(cls, value: object) -> object:
+        return _trim_string(value, 800)
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def keep_reason_bounded(cls, value: object) -> object:
+        return _trim_string(value, 500)
 
 
 class AuditResult(BaseModel):
@@ -86,6 +125,16 @@ class AuditResult(BaseModel):
     line_level_rewrites: list[RewriteSuggestion] = Field(default_factory=list, max_length=8)
     voice_summary: list[str] = Field(default_factory=list, max_length=6)
     recommended_next_action: str = Field(max_length=900)
+
+    @field_validator("verdict", mode="before")
+    @classmethod
+    def keep_verdict_short(cls, value: object) -> object:
+        return _trim_string(value, 80)
+
+    @field_validator("recommended_next_action", mode="before")
+    @classmethod
+    def keep_next_action_bounded(cls, value: object) -> object:
+        return _trim_string(value, 900)
 
     @field_validator("verdict", "scoring_context", "recommended_next_action")
     @classmethod

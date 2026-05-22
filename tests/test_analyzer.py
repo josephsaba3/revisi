@@ -20,6 +20,32 @@ def test_audit_issue_trims_long_model_issue_type() -> None:
     assert issue.issue_type.startswith("Vague promise")
 
 
+def test_audit_result_trims_long_model_verdict() -> None:
+    result = AuditResult(
+        overall_score=86,
+        verdict="Strong. Clear, specific, distinct and unusually grounded for this page, with only a few soft transitions.",
+        scoring_context="General brand copy",
+        contextual_modifiers=["Message Hierarchy"],
+        scores=Scorecard(
+            brand_fit=86,
+            audience_fit=86,
+            clarity=86,
+            human_sound=86,
+            specificity=86,
+            trust=86,
+            distinctiveness=86,
+        ),
+        ai_sludge_risk=12,
+        top_issues=[],
+        line_level_rewrites=[],
+        voice_summary=["Useful audit."],
+        recommended_next_action="Tighten one transition.",
+    )
+
+    assert len(result.verdict) == 80
+    assert result.verdict.startswith("Strong.")
+
+
 def test_local_analyzer_returns_valid_audit_without_key(monkeypatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     get_settings.cache_clear()
