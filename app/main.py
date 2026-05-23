@@ -454,7 +454,7 @@ def site_voice(
     if current_user is None:
         return RedirectResponse("/login", status_code=303)
     site = _owned_site(db, current_user, site_id)
-    return _site_voice_response(request, current_user, site)
+    return _site_voice_response(request, current_user, site, db)
 
 
 @app.get("/app/sites/{site_id}/report", response_class=HTMLResponse)
@@ -489,6 +489,7 @@ async def update_site_guide(
             request,
             current_user,
             site,
+            db,
             error=str(exc),
             guide_values={"brand_voice": brand_voice},
             status_code=400,
@@ -659,22 +660,28 @@ def _site_voice_response(
     request: Request,
     current_user: models.User,
     site: models.Site,
+    db: Session,
     *,
     error: str | None = None,
     guide_values: dict | None = None,
     status_code: int = 200,
 ) -> HTMLResponse:
-    scans = list(site.scans or [])
-    scan_rows = _scan_history_rows(scans)
-    site_summary = _site_summary_rows([site])[0]
-    return templates.TemplateResponse(
+    started_at = time.perf_counter()
+    query_started_at = time.perf_counter()
+    latest_scan = _latest_site_scan(db, current_user, site)
+    scan_count = _site_scan_count(db, current_user, site)
+    page_rows = _latest_site_page_summary_rows(db, site, latest_scan)
+    site_summary = _site_summary_from_page_rows(site, latest_scan, scan_count, page_rows)
+    query_elapsed = time.perf_counter() - query_started_at
+
+    template_started_at = time.perf_counter()
+    response = templates.TemplateResponse(
         request,
         "site_voice.html",
         _app_context(
             request,
             current_user,
             site=site,
-            scan_rows=scan_rows,
             site_summary=site_summary,
             workspace_summary=_workspace_summary([site_summary]),
             error=error,
@@ -682,6 +689,16 @@ def _site_voice_response(
         ),
         status_code=status_code,
     )
+    template_elapsed = time.perf_counter() - template_started_at
+    logger.info(
+        "site_voice loaded in %.3fs (query %.3fs, template %.3fs, scans=%s, pages=%s)",
+        time.perf_counter() - started_at,
+        query_elapsed,
+        template_elapsed,
+        scan_count,
+        len(page_rows),
+    )
+    return response
 
 
 def _site_report_response(
