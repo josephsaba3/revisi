@@ -802,18 +802,23 @@ button:disabled {
   font-size: 18px;
 }
 
-.workspace-add-modal {
+.workspace-add-modal,
+.site-guide-modal {
   width: min(720px, calc(100% - 40px));
   max-height: calc(100vh - 40px);
   border: 1px solid #0a0a0a;
   overflow: auto;
   padding: 0;
+  position: fixed;
+  inset: 0;
+  margin: auto;
   background: var(--workspace-paper);
   color: #0a0a0a;
 }
 
-.workspace-add-modal::backdrop {
-  background: rgb(10 10 10 / 42%);
+.workspace-add-modal::backdrop,
+.site-guide-modal::backdrop {
+  background: rgb(42 42 42 / 72%);
 }
 
 .workspace-add-dialog {
@@ -862,14 +867,26 @@ button:disabled {
   margin: 24px 32px 0;
 }
 
-.workspace-add-modal .site-create {
+.workspace-add-modal .site-create,
+.site-guide-modal .guide-editor {
   border: 1px solid #0a0a0a;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: end;
   gap: 16px;
   margin: 28px 32px 32px;
   padding: 28px;
+}
+
+.workspace-add-modal .site-create {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.site-guide-modal .guide-editor {
+  grid-template-columns: 1fr;
+}
+
+.site-guide-modal .guide-editor h2 {
+  display: none;
 }
 
 .workspace-add-modal .workspace-guide,
@@ -877,7 +894,8 @@ button:disabled {
   grid-column: 1 / -1;
 }
 
-.workspace-add-modal .app-button {
+.workspace-add-modal .app-button,
+.site-guide-modal .app-button {
   width: max-content;
 }
 
@@ -1615,7 +1633,8 @@ button:disabled {
     justify-content: flex-start;
   }
 
-  .workspace-add-modal {
+  .workspace-add-modal,
+  .site-guide-modal {
     width: calc(100% - 24px);
     max-height: calc(100vh - 24px);
   }
@@ -1633,7 +1652,8 @@ button:disabled {
     margin: 20px 20px 0;
   }
 
-  .workspace-add-modal .site-create {
+  .workspace-add-modal .site-create,
+  .site-guide-modal .guide-editor {
     grid-template-columns: 1fr;
     margin: 20px;
     padding: 20px;

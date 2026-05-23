@@ -193,6 +193,25 @@
     }
   }
 
+  const siteGuideDialog = document.getElementById("site-guide-modal");
+  if (siteGuideDialog) {
+    function openSiteGuideDialog() {
+      if (!siteGuideDialog.open) siteGuideDialog.showModal();
+    }
+
+    document.querySelectorAll("[data-site-guide-open]").forEach((button) => {
+      button.addEventListener("click", openSiteGuideDialog);
+    });
+
+    siteGuideDialog.querySelectorAll("[data-site-guide-close]").forEach((button) => {
+      button.addEventListener("click", () => siteGuideDialog.close());
+    });
+
+    siteGuideDialog.addEventListener("click", (event) => {
+      if (event.target === siteGuideDialog) siteGuideDialog.close();
+    });
+  }
+
   const form = document.getElementById("scan-form");
   const urlInput = document.getElementById("url-input");
   const urlBox = document.getElementById("url-box");

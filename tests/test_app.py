@@ -395,6 +395,9 @@ def test_app_site_detail_renders_latest_pages_table(db_session) -> None:
     assert "Brand Fit" in response.text
     assert "92" in response.text
     assert "Open &rarr;" in response.text
+    assert "data-site-guide-open" in response.text
+    assert 'id="site-guide-modal"' in response.text
+    assert "data-site-guide-close" in response.text
 
 
 def test_create_site_accepts_markdown_guide_upload(db_session) -> None:

@@ -70,7 +70,7 @@
             <p>Site voice score</p>
           </div>
           <div class="site-actions">
-            <a class="app-button" href="#site-settings">Settings</a>
+            <button class="app-button" type="button" data-site-guide-open aria-haspopup="dialog">Settings</button>
             <form method="post" action="/app/sites/{{ site.id }}/scan">
               <input type="hidden" name="depth" value="site">
               <button class="app-button primary" type="submit">{% if scan_rows %}Re-run scan &rarr;{% else %}Run scan &rarr;{% endif %}</button>
@@ -132,16 +132,25 @@
         </div>
       </section>
 
-      <section class="site-settings-panel" id="site-settings">
-        <form class="app-form guide-editor" method="post" action="/app/sites/{{ site.id }}/guide">
-          <h2>Brand voice guide</h2>
-          <label>
-            <span>Used on future paid scans</span>
-            <textarea name="brand_voice" rows="10" placeholder="Paste voice rules, examples, anti-references, and banned phrases.">{{ site.brand_voice_text or '' }}</textarea>
-          </label>
-          <button class="app-button" type="submit">Save guide</button>
-        </form>
-      </section>
+      <dialog class="site-guide-modal" id="site-guide-modal" aria-labelledby="site-guide-title">
+        <div class="workspace-add-dialog">
+          <header>
+            <div>
+              <p class="app-kicker">Settings</p>
+              <h2 id="site-guide-title">Brand voice guide.</h2>
+            </div>
+            <button class="workspace-modal-close" type="button" data-site-guide-close aria-label="Close brand voice guide dialog">&times;</button>
+          </header>
+          <form class="app-form guide-editor" method="post" action="/app/sites/{{ site.id }}/guide">
+            <h2>Brand voice guide</h2>
+            <label>
+              <span>Used on future paid scans</span>
+              <textarea name="brand_voice" rows="10" placeholder="Paste voice rules, examples, anti-references, and banned phrases.">{{ site.brand_voice_text or '' }}</textarea>
+            </label>
+            <button class="app-button" type="submit">Save guide</button>
+          </form>
+        </div>
+      </dialog>
     </main>
   </div>
 </div>
