@@ -4477,6 +4477,11 @@ button:disabled {
   display: block;
 }
 
+.pages-toggle .close-icon,
+.scorecard-toggle .close-icon {
+  display: none;
+}
+
 .audit-workspace.is-pages-collapsed .audit-topbar {
   grid-template-columns: 52px 1fr 450px;
 }
@@ -7431,7 +7436,7 @@ button:disabled {
     position: absolute;
     top: 70px;
     bottom: 0;
-    width: min(88vw, 360px);
+    width: min(calc(100vw - 52px), 390px);
     margin-top: 0;
     overflow-y: auto;
     box-shadow: 0 0 0 1px var(--line);
@@ -7439,7 +7444,7 @@ button:disabled {
 
   .audit-workspace:not(.is-pages-collapsed) .audit-pages,
   .audit-workspace:not(.is-scorecard-collapsed) .scorecard-panel {
-    left: 0;
+    left: 52px;
   }
 
   .page-list-head,
@@ -7483,6 +7488,16 @@ button:disabled {
   .audit-workspace.is-scorecard-collapsed .scorecard-toggle,
   .audit-workspace:not(.is-scorecard-collapsed) .scorecard-toggle {
     transform: none;
+  }
+
+  .audit-workspace:not(.is-pages-collapsed) .pages-toggle .toggle-icon,
+  .audit-workspace:not(.is-scorecard-collapsed) .scorecard-toggle .toggle-icon {
+    display: none;
+  }
+
+  .audit-workspace:not(.is-pages-collapsed) .pages-toggle .close-icon,
+  .audit-workspace:not(.is-scorecard-collapsed) .scorecard-toggle .close-icon {
+    display: block;
   }
 
   .audit-document {
