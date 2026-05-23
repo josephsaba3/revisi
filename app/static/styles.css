@@ -4478,6 +4478,7 @@ button:disabled {
 }
 
 .pages-toggle .close-icon,
+.pages-toggle .toggle-icon,
 .scorecard-toggle .close-icon {
   display: none;
 }
@@ -4949,7 +4950,7 @@ button:disabled {
 }
 
 .scorecard-toggle svg {
-  display: block;
+  display: none;
 }
 
 .audit-workspace.is-scorecard-collapsed .audit-topbar {
@@ -7461,6 +7462,16 @@ button:disabled {
     width: 34px;
     height: 38px;
     margin: 8px auto 0;
+  }
+
+  .pages-toggle .chevron-icon,
+  .scorecard-toggle .chevron-icon {
+    display: none;
+  }
+
+  .pages-toggle .toggle-icon,
+  .scorecard-toggle .toggle-icon {
+    display: block;
   }
 
   .audit-workspace.is-pages-collapsed .page-list-head > div,
