@@ -4,46 +4,22 @@
 {% block main_class %}revisi-app-root{% endblock %}
 
 {% block content %}
+{% set active_tab = "sites" %}
 <div class="workspace-shell">
   <header class="workspace-topbar">
     <div class="workspace-brand">
       <a href="/app" aria-label="Revisi app home">
         <img src="{{ url_for('static', path='/revisi-wordmark.svg') }}" alt="Revisi" width="103" height="40">
       </a>
-      <button class="workspace-rail-toggle" type="button" data-workspace-rail-toggle aria-controls="workspace-rail" aria-pressed="false" aria-label="Collapse workspace sidebar">
-        <i aria-hidden="true"></i>
-      </button>
     </div>
     <div class="workspace-context">
-      <span>Workspace</span>
-      <strong>{{ current_user.email }}</strong>
-      <i></i>
-      <span>{{ workspace_summary.site_count }} site{% if workspace_summary.site_count != 1 %}s{% endif %}</span>
-      <span>{{ workspace_summary.page_count }} audited page{% if workspace_summary.page_count != 1 %}s{% endif %}</span>
+      {% include "_workspace_tabs.html" %}
     </div>
     <form class="workspace-logout" method="post" action="/logout">
       <button type="submit">Log out</button>
     </form>
   </header>
-  {% set active_tab = "sites" %}
-  {% include "_workspace_tabs.html" %}
   <div class="workspace-grid">
-    <aside class="workspace-rail" id="workspace-rail" aria-label="Workspace summary">
-      <section class="workspace-score">
-        <p>Workspace voice</p>
-        <strong>{% if workspace_summary.score is not none %}{{ workspace_summary.score }}{% else %}--{% endif %}</strong>
-        <span>/ 100</span>
-      </section>
-      <dl class="workspace-stats">
-        <div><dt>Sites</dt><dd>{{ workspace_summary.site_count }}</dd></div>
-        <div><dt>Pages</dt><dd>{{ workspace_summary.page_count }}</dd></div>
-        <div><dt>Flags</dt><dd>{{ workspace_summary.issue_count }}</dd></div>
-        <div><dt>Guides</dt><dd>{{ site_rows|selectattr("site.brand_voice_text")|list|length }}</dd></div>
-      </dl>
-      <section class="workspace-note">
-        <p>Voice guides stay with each site. Open a site to scan it, review its history, or update the guide.</p>
-      </section>
-    </aside>
     <main class="workspace-main">
       <header class="workspace-heading">
         <div>

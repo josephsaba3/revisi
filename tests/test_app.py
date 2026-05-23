@@ -341,8 +341,9 @@ def test_app_site_workspace_lists_owned_sites(db_session) -> None:
     assert "Add site" in response.text
     assert 'data-add-site-open' in response.text
     assert 'id="add-site-modal"' in response.text
-    assert 'data-workspace-rail-toggle' in response.text
-    assert 'id="workspace-rail"' in response.text
+    assert 'workspace-mobile-menu' in response.text
+    assert 'data-workspace-rail-toggle' not in response.text
+    assert 'id="workspace-rail"' not in response.text
     assert 'data-app-scan-form' in response.text
     assert 'id="app-scan-loader"' in response.text
     assert "Import sitemap" not in response.text

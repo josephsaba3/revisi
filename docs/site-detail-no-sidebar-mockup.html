@@ -1,0 +1,840 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Revisi site detail no-sidebar mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --ink: #0a0a0a;
+        --ink-2: #1a1a1a;
+        --paper: #fafafa;
+        --paper-2: #f4f4f4;
+        --line: #e5e5e5;
+        --line-2: #d4d4d4;
+        --muted: #737373;
+        --muted-2: #525252;
+        --accent: #ff2d6f;
+        --accent-deep: #d61f59;
+        --accent-soft: #fff3f7;
+        --sans: "Space Grotesk", system-ui, sans-serif;
+        --mono: "JetBrains Mono", ui-monospace, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--sans);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: 70px 1fr;
+      }
+
+      .topbar {
+        min-width: 0;
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: minmax(160px, 240px) minmax(0, 1fr) auto;
+        background: var(--paper);
+      }
+
+      .brand,
+      .context,
+      .actions {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+      }
+
+      .brand {
+        border-right: 1px solid var(--line);
+        padding: 0 30px;
+      }
+
+      .brand img {
+        width: 116px;
+        display: block;
+      }
+
+      .context {
+        padding: 0;
+        overflow: hidden;
+      }
+
+      .dot {
+        width: 6px;
+        height: 6px;
+        flex: 0 0 auto;
+        border-radius: 50%;
+        background: var(--ink);
+      }
+
+      .actions {
+        border-left: 1px solid var(--line);
+        gap: 0;
+      }
+
+      .top-link,
+      .hamburger summary {
+        min-height: 70px;
+        border: 0;
+        border-left: 1px solid var(--line);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        color: var(--ink);
+      }
+
+      .top-link {
+        padding: 0 24px;
+        font-size: 13.5px;
+        font-weight: 500;
+      }
+
+      .hamburger {
+        position: relative;
+        display: none;
+      }
+
+      .hamburger summary {
+        width: 70px;
+        gap: 4px;
+        flex-direction: column;
+        list-style: none;
+        cursor: pointer;
+      }
+
+      .hamburger summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .hamburger summary span {
+        width: 18px;
+        height: 2px;
+        background: currentColor;
+      }
+
+      .hamburger[open] summary {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      .menu {
+        width: 240px;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        z-index: 10;
+        border: 1px solid var(--line);
+        display: grid;
+        background: var(--paper);
+      }
+
+      .menu a,
+      .menu span {
+        min-height: 52px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .menu span {
+        box-shadow: inset 2px 0 0 var(--accent);
+      }
+
+      .menu a:last-child {
+        border-bottom: 0;
+      }
+
+      .workspace-tabs {
+        display: flex;
+        align-items: stretch;
+      }
+
+      .workspace-tab {
+        min-height: 70px;
+        min-width: 120px;
+        border-left: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        position: relative;
+        padding: 0 28px;
+        color: var(--ink);
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .context .workspace-tab:last-child {
+        border-right: 1px solid var(--line);
+      }
+
+      .workspace-tab.active::after {
+        height: 2px;
+        position: absolute;
+        right: -1px;
+        bottom: -1px;
+        left: -1px;
+        background: var(--accent);
+        content: "";
+      }
+
+      .workspace-tab b {
+        min-width: 24px;
+        padding: 3px 6px;
+        background: var(--ink);
+        color: var(--paper);
+        font-size: 11px;
+        letter-spacing: 0;
+        text-align: center;
+      }
+
+      .page {
+        min-width: 0;
+      }
+
+      .hero {
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+        gap: 44px;
+        padding: 52px 56px 48px;
+      }
+
+      .back {
+        display: inline-flex;
+        margin-bottom: 24px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .domain {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+      }
+
+      h1 {
+        max-width: 820px;
+        margin: 0;
+        color: var(--ink);
+        font-size: clamp(52px, 7vw, 96px);
+        font-weight: 700;
+        line-height: 0.92;
+        letter-spacing: -0.045em;
+      }
+
+      .meta {
+        max-width: 760px;
+        margin-top: 26px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        color: var(--muted-2);
+        font-size: 14.5px;
+      }
+
+      .meta b {
+        color: var(--ink);
+      }
+
+      .meta b.flag {
+        color: var(--accent-deep);
+      }
+
+      .score-card {
+        align-self: stretch;
+        border-left: 1px solid var(--line);
+        display: grid;
+        align-content: center;
+        justify-items: start;
+        padding-left: 44px;
+      }
+
+      .score-card p,
+      .stat p,
+      .metrics-head p {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .score {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+
+      .score strong {
+        color: var(--ink);
+        font-size: 88px;
+        font-weight: 700;
+        line-height: 0.84;
+        letter-spacing: -0.04em;
+      }
+
+      .score span {
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 13px;
+        letter-spacing: 0.08em;
+      }
+
+      .cta-row {
+        margin-top: 28px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .btn {
+        min-height: 44px;
+        border: 1px solid var(--ink);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 18px;
+        background: var(--paper);
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .btn.primary {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      .stats {
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .stat {
+        min-height: 132px;
+        border-right: 1px solid var(--line);
+        display: grid;
+        align-content: center;
+        padding: 28px 56px;
+      }
+
+      .stat:last-child {
+        border-right: 0;
+      }
+
+      .stat strong {
+        font-size: 42px;
+        line-height: 0.95;
+      }
+
+      .stat strong.flag {
+        color: var(--accent-deep);
+      }
+
+      .body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 40px;
+        padding: 46px 56px 80px;
+      }
+
+      .metrics-head {
+        margin-bottom: 24px;
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+      }
+
+      .metrics-head h2 {
+        margin: 0;
+        font-size: 36px;
+        line-height: 1;
+        letter-spacing: -0.035em;
+      }
+
+      .metrics {
+        border-top: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .metric {
+        border-right: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        padding: 18px 18px 20px;
+      }
+
+      .metric:nth-child(4n) {
+        border-right: 0;
+      }
+
+      .metric p {
+        margin: 0 0 20px;
+        color: var(--muted-2);
+        font-size: 13.5px;
+      }
+
+      .metric strong {
+        font-size: 28px;
+      }
+
+      .meter {
+        height: 5px;
+        margin-top: 12px;
+        display: block;
+        background: var(--line);
+      }
+
+      .meter i {
+        height: 100%;
+        display: block;
+        background: var(--ink);
+      }
+
+      .meter i.flag {
+        background: var(--accent);
+      }
+
+      .note {
+        border: 1px solid var(--line);
+        align-self: start;
+        padding: 24px;
+      }
+
+      .note h2 {
+        margin: 0 0 12px;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+      }
+
+      .note p {
+        margin: 0;
+        color: var(--muted-2);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .pages {
+        padding-top: 42px;
+      }
+
+      .pages header {
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .pages h2 {
+        margin: 0;
+        font-size: 36px;
+        line-height: 1;
+        letter-spacing: -0.035em;
+      }
+
+      .pages header p {
+        margin: 0;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .page-table {
+        border-top: 1px solid var(--line);
+      }
+
+      .page-row {
+        min-height: 82px;
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr) 96px 80px 80px 96px;
+        gap: 18px;
+        align-items: center;
+      }
+
+      .marker {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: var(--paper-2);
+        color: var(--muted-2);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .marker.flag {
+        background: var(--accent);
+        color: var(--paper);
+      }
+
+      .page-title {
+        min-width: 0;
+        display: grid;
+        gap: 3px;
+      }
+
+      .page-title strong {
+        overflow: hidden;
+        font-size: 15px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .page-title span,
+      .row-meta {
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .row-score.flag,
+      .row-flags.flag {
+        color: var(--accent-deep);
+      }
+
+      .open {
+        min-height: 38px;
+        border: 1px solid var(--ink);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      @media (max-width: 900px) {
+        .app {
+          grid-template-rows: 64px 1fr;
+        }
+
+        .topbar {
+          grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        .brand {
+          border-right: 0;
+          padding: 0 18px;
+        }
+
+        .brand img {
+          width: 104px;
+        }
+
+        .context,
+        .top-link {
+          display: none;
+        }
+
+        .hamburger {
+          display: block;
+        }
+
+        .hamburger summary {
+          width: 64px;
+          min-height: 64px;
+          border-left: 1px solid var(--line);
+        }
+
+        .hero {
+          display: block;
+          padding: 34px 20px 30px;
+        }
+
+        h1 {
+          font-size: 48px;
+        }
+
+        .meta {
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .score-card {
+          margin-top: 34px;
+          border-top: 1px solid var(--line);
+          border-left: 0;
+          padding: 28px 0 0;
+        }
+
+        .score strong {
+          font-size: 72px;
+        }
+
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .stat {
+          min-height: 118px;
+          padding: 24px 20px;
+        }
+
+        .stat:nth-child(2n) {
+          border-right: 0;
+        }
+
+        .body {
+          display: block;
+          padding: 36px 20px 56px;
+        }
+
+        .metrics-head {
+          align-items: start;
+          flex-direction: column;
+        }
+
+        .metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .metric:nth-child(2n) {
+          border-right: 0;
+        }
+
+        .note {
+          margin-top: 32px;
+        }
+
+        .pages header {
+          align-items: start;
+          flex-direction: column;
+        }
+
+        .page-row {
+          grid-template-columns: 34px minmax(0, 1fr);
+          gap: 10px 14px;
+          padding: 18px 0;
+        }
+
+        .marker {
+          grid-row: span 2;
+        }
+
+        .row-meta,
+        .row-score,
+        .row-flags,
+        .open {
+          grid-column: 2;
+          justify-self: start;
+        }
+
+        .row-flags::before,
+        .row-score::before,
+        .row-meta::before {
+          margin-right: 8px;
+          color: var(--muted);
+          font-family: var(--mono);
+          font-size: 10px;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+
+        .row-flags::before {
+          content: "Flags";
+        }
+
+        .row-score::before {
+          content: "Score";
+        }
+
+        .row-meta::before {
+          content: "Last";
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Revisi app home">
+          <img src="../app/static/revisi-wordmark.svg" alt="Revisi" width="116" height="45">
+        </a>
+        <div class="context">
+          <nav class="workspace-tabs" aria-label="Workspace">
+            <span class="workspace-tab active">Sites <b>1</b></span>
+            <a class="workspace-tab" href="#">Report</a>
+            <a class="workspace-tab" href="#">Voice</a>
+          </nav>
+        </div>
+        <div class="actions">
+          <a class="top-link" href="#">Log out</a>
+          <details class="hamburger">
+            <summary aria-label="Open navigation">
+              <span aria-hidden="true"></span>
+              <span aria-hidden="true"></span>
+              <span aria-hidden="true"></span>
+            </summary>
+            <nav class="menu" aria-label="Workspace">
+              <span>Sites</span>
+              <a href="#">Report</a>
+              <a href="#">Voice</a>
+            </nav>
+          </details>
+        </div>
+      </header>
+
+      <main class="page">
+        <section class="hero">
+          <div>
+            <a class="back" href="#">&larr; All sites</a>
+            <p class="domain">splitpea.co</p>
+            <h1>A/B Testing Tool for Small Websites | SplitPea</h1>
+            <div class="meta">
+              <span><b>10</b> pages</span>
+              <span><b class="flag">45</b> flags</span>
+              <span>Last scan: <b>23 May, 14:20</b></span>
+              <span>Voice: <b>Inferred voice, not confirmed.</b></span>
+            </div>
+          </div>
+          <aside class="score-card" aria-label="Site score">
+            <p>Site voice</p>
+            <div class="score"><strong>79</strong><span>/ 100</span></div>
+            <div class="cta-row">
+              <a class="btn" href="#">Voice</a>
+              <a class="btn primary" href="#">Re-run scan &rarr;</a>
+            </div>
+          </aside>
+        </section>
+
+        <section class="stats" aria-label="Site summary">
+          <div class="stat"><p>Pages</p><strong>10</strong></div>
+          <div class="stat"><p>Scans</p><strong>1</strong></div>
+          <div class="stat"><p>Flags</p><strong class="flag">45</strong></div>
+          <div class="stat"><p>Guide</p><strong>0</strong></div>
+        </section>
+
+        <section class="body">
+          <div>
+            <div class="metrics-head">
+              <div>
+                <p>Scorecard</p>
+                <h2>Where the voice is holding, and where it drifts.</h2>
+              </div>
+              <a class="btn" href="#">Open report</a>
+            </div>
+            <div class="metrics" aria-label="Site scorecard">
+              <article class="metric">
+                <p>Brand fit</p>
+                <strong>82</strong><span class="meter"><i style="width: 82%;"></i></span>
+              </article>
+              <article class="metric">
+                <p>Audience fit</p>
+                <strong>77</strong><span class="meter"><i style="width: 77%;"></i></span>
+              </article>
+              <article class="metric">
+                <p>Clarity</p>
+                <strong>84</strong><span class="meter"><i style="width: 84%;"></i></span>
+              </article>
+              <article class="metric">
+                <p>Human sound</p>
+                <strong>71</strong><span class="meter"><i class="flag" style="width: 71%;"></i></span>
+              </article>
+              <article class="metric">
+                <p>Specificity</p>
+                <strong>69</strong><span class="meter"><i class="flag" style="width: 69%;"></i></span>
+              </article>
+              <article class="metric">
+                <p>Trust</p>
+                <strong>76</strong><span class="meter"><i style="width: 76%;"></i></span>
+              </article>
+              <article class="metric">
+                <p>Distinctiveness</p>
+                <strong>74</strong><span class="meter"><i class="flag" style="width: 74%;"></i></span>
+              </article>
+              <article class="metric">
+                <p>AI sludge risk</p>
+                <strong>28</strong><span class="meter"><i style="width: 28%;"></i></span>
+              </article>
+            </div>
+
+            <section class="pages">
+              <header>
+                <h2>Pages</h2>
+                <p>10 of 10 shown</p>
+              </header>
+              <div class="page-table" aria-label="Pages">
+                <article class="page-row">
+                  <span class="marker flag">01</span>
+                  <div class="page-title"><strong>A/B Testing Tool for Small Websites | SplitPea</strong><span>/</span></div>
+                  <span class="row-meta">23 May, 14:20</span>
+                  <b class="row-flags flag">12</b>
+                  <b class="row-score flag">68</b>
+                  <a class="open" href="#">Open &rarr;</a>
+                </article>
+                <article class="page-row">
+                  <span class="marker flag">02</span>
+                  <div class="page-title"><strong>Pricing</strong><span>/pricing</span></div>
+                  <span class="row-meta">23 May, 14:20</span>
+                  <b class="row-flags flag">8</b>
+                  <b class="row-score">78</b>
+                  <a class="open" href="#">Open &rarr;</a>
+                </article>
+                <article class="page-row">
+                  <span class="marker">&#10003;</span>
+                  <div class="page-title"><strong>How SplitPea Works</strong><span>/how-it-works</span></div>
+                  <span class="row-meta">23 May, 14:20</span>
+                  <b class="row-flags">0</b>
+                  <b class="row-score">91</b>
+                  <a class="open" href="#">Open &rarr;</a>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <aside class="note">
+            <h2>No sidebar version.</h2>
+            <p>The rail summary is folded into the header and stat band. The logo owns the left side of the top nav, and site navigation lives in the hamburger on mobile.</p>
+          </aside>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

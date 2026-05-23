@@ -4,46 +4,22 @@
 {% block main_class %}revisi-app-root{% endblock %}
 
 {% block content %}
+{% set active_tab = "voice" %}
 <div class="workspace-shell">
   <header class="workspace-topbar">
     <div class="workspace-brand">
       <a href="/app" aria-label="Revisi app home">
         <img src="{{ url_for('static', path='/revisi-wordmark.svg') }}" alt="Revisi" width="103" height="40">
       </a>
-      <button class="workspace-rail-toggle" type="button" data-workspace-rail-toggle aria-controls="workspace-rail" aria-pressed="false" aria-label="Collapse workspace sidebar">
-        <i aria-hidden="true"></i>
-      </button>
     </div>
     <div class="workspace-context">
-      <span>Workspace</span>
-      <strong>{{ current_user.email }}</strong>
-      <i></i>
-      <span>{{ site.name }}</span>
-      <span>{% if site.brand_voice_text %}Voice guide saved{% else %}Voice guide empty{% endif %}</span>
+      {% include "_workspace_tabs.html" %}
     </div>
     <form class="workspace-logout" method="post" action="/logout">
       <button type="submit">Log out</button>
     </form>
   </header>
-  {% set active_tab = "voice" %}
-  {% include "_workspace_tabs.html" %}
   <div class="workspace-grid">
-    <aside class="workspace-rail" id="workspace-rail" aria-label="Site voice summary">
-      <section class="workspace-score">
-        <p>Site voice</p>
-        <strong>{% if site_summary.score is not none %}{{ site_summary.score }}{% else %}--{% endif %}</strong>
-        <span>/ 100</span>
-      </section>
-      <dl class="workspace-stats">
-        <div><dt>Pages</dt><dd>{{ site_summary.page_count }}</dd></div>
-        <div><dt>Scans</dt><dd>{{ site_summary.scan_count }}</dd></div>
-        <div><dt>Flags</dt><dd>{{ site_summary.issue_count }}</dd></div>
-        <div><dt>Guide</dt><dd>{% if site.brand_voice_text %}1{% else %}0{% endif %}</dd></div>
-      </dl>
-      <section class="workspace-note">
-        <p>Voice guides are per site. This reference is only used when scanning {{ site.name }}.</p>
-      </section>
-    </aside>
     <main class="site-detail-main voice-main">
       <header class="voice-head">
         <div>
