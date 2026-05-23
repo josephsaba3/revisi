@@ -584,6 +584,9 @@ def _site_response(
 ) -> HTMLResponse:
     scans = list(site.scans or [])
     scan_rows = _scan_history_rows(scans)
+    latest_scan = scan_rows[0] if scan_rows else None
+    latest_scan_model = latest_scan["scan"] if latest_scan else None
+    site_summary = _site_summary_rows([site])[0]
     return templates.TemplateResponse(
         request,
         "site_detail.html",
@@ -592,7 +595,11 @@ def _site_response(
             current_user,
             site=site,
             scan_rows=scan_rows,
-            latest_scan=scan_rows[0] if scan_rows else None,
+            latest_scan=latest_scan,
+            site_summary=site_summary,
+            workspace_summary=_workspace_summary([site_summary]),
+            page_rows=_site_page_rows(site, latest_scan_model),
+            metric_rows=_site_metric_rows(latest_scan_model),
             error=error,
         ),
         status_code=status_code,
@@ -612,6 +619,69 @@ def _scan_history_rows(scans: list[models.Scan]) -> list[dict]:
                 "delta": None if previous_score is None else score - previous_score,
             }
         )
+    return rows
+
+
+def _site_page_rows(site: models.Site, latest_scan: models.Scan | None) -> list[dict]:
+    if latest_scan is None:
+        return []
+    rows = []
+    for index, page in enumerate(latest_scan.page_results or []):
+        parsed = urlparse(page.url)
+        path = parsed.path or "/"
+        rows.append(
+            {
+                "page": page,
+                "position": index + 1,
+                "title": page.title or path or site.name,
+                "path": path,
+                "type": _page_type_label(path, page.title),
+                "issue_count": len(page.issues or []),
+                "score": page.overall_score,
+                "last_scan": latest_scan.created_at,
+                "report_url": f"/app/sites/{site.id}/scans/{latest_scan.id}?page={page.id}",
+            }
+        )
+    return rows
+
+
+def _page_type_label(path: str, title: str | None) -> str:
+    path_lower = path.lower()
+    title_lower = (title or "").lower()
+    if path_lower in {"", "/"}:
+        return "Homepage"
+    if "pricing" in path_lower or "pricing" in title_lower:
+        return "Pricing"
+    if "/blog" in path_lower or "/articles" in path_lower:
+        return "Blog"
+    if "/docs" in path_lower or "/guide" in path_lower or "install" in path_lower:
+        return "Docs"
+    if "/customer" in path_lower or "/case" in path_lower:
+        return "Case"
+    if "/feature" in path_lower or "/product" in path_lower:
+        return "Feature"
+    return "Page"
+
+
+def _site_metric_rows(latest_scan: models.Scan | None) -> list[dict]:
+    pages = list(latest_scan.page_results or []) if latest_scan else []
+    metrics = [
+        ("Brand Fit", "brand_fit"),
+        ("Audience Fit", "audience_fit"),
+        ("Clarity", "clarity"),
+        ("Human Sound", "human_sound"),
+        ("Specificity", "specificity"),
+        ("Trust", "trust"),
+        ("Distinctiveness", "distinctiveness"),
+    ]
+    rows = []
+    for label, key in metrics:
+        values = [
+            page.scores.get(key)
+            for page in pages
+            if isinstance(page.scores, dict) and isinstance(page.scores.get(key), (int, float))
+        ]
+        rows.append({"label": label, "value": round(sum(values) / len(values)) if values else 0})
     return rows
 
 

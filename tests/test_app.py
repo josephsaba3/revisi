@@ -319,6 +319,84 @@ def test_app_site_workspace_lists_owned_sites(db_session) -> None:
     assert detail.status_code == 404
 
 
+def test_app_site_detail_renders_latest_pages_table(db_session) -> None:
+    user = main.models.User(id="00000000-0000-4000-8000-000000000012", email="pages@example.com")
+    site = main.models.Site(
+        user=user,
+        name="SplitPea",
+        base_url="https://splitpea.co",
+        domain="splitpea.co",
+        brand_voice_text="Plainspoken and practical.",
+    )
+    db_session.add_all([user, site])
+    db_session.commit()
+    page = ExtractedPage(
+        url="https://splitpea.co/pricing",
+        title="Pricing",
+        meta_description="Pricing page",
+        headings=["Pricing"],
+        ctas=["Start"],
+        lines=[ExtractedLine(source="H1", text="Simple pricing for small teams.")],
+    )
+    result = AuditResult(
+        overall_score=92,
+        verdict="Strong, with clear revision targets",
+        scoring_context="SaaS pricing page",
+        contextual_modifiers=["Message Hierarchy"],
+        scores=Scorecard(
+            brand_fit=88,
+            audience_fit=84,
+            clarity=91,
+            human_sound=86,
+            specificity=82,
+            trust=79,
+            distinctiveness=76,
+        ),
+        ai_sludge_risk=18,
+        top_issues=[
+            AuditIssue(
+                issue_type="Too vague",
+                priority="Medium",
+                source="H1",
+                original_copy="Simple pricing for small teams.",
+                explanation="Add more proof.",
+                suggested_rewrite="Show the plan and who it fits.",
+            )
+        ],
+        line_level_rewrites=[],
+        voice_summary=["Plain and direct"],
+        recommended_next_action="Tighten the proof.",
+    )
+    main._save_scan_pages(
+        db_session,
+        "splitpea.co",
+        "https://splitpea.co",
+        site.brand_voice_text,
+        [(page, result)],
+        user=user,
+        site=site,
+        scan_mode="site",
+    )
+    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[main.get_current_user] = lambda: SimpleNamespace(id=user.id, email=user.email)
+    client = TestClient(app)
+
+    try:
+        response = client.get(f"/app/sites/{site.id}")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert "SplitPea" in response.text
+    assert "splitpea.co" in response.text
+    assert "Pages" in response.text
+    assert "Pricing" in response.text
+    assert "/pricing" in response.text
+    assert "Brand Fit" in response.text
+    assert "92" in response.text
+    assert "Open &rarr;" in response.text
+
+
 def test_create_site_accepts_markdown_guide_upload(db_session) -> None:
     user = main.models.User(id="00000000-0000-4000-8000-000000000003", email="guide@example.com")
     db_session.add(user)
