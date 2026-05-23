@@ -111,19 +111,26 @@
   document.querySelectorAll("[data-scorecard-toggle]").forEach((toggle) => {
     const workspace = toggle.closest(".audit-workspace");
     if (!workspace) return;
+    const mobileQuery = window.matchMedia("(max-width: 840px)");
 
-    const saved = window.localStorage.getItem("revisi-scorecard-collapsed") === "true";
+    const saved = mobileQuery.matches || window.localStorage.getItem("revisi-scorecard-collapsed") === "true";
 
     function setCollapsed(isCollapsed) {
       workspace.classList.toggle("is-scorecard-collapsed", isCollapsed);
       toggle.setAttribute("aria-pressed", String(isCollapsed));
       toggle.setAttribute("aria-label", isCollapsed ? "Expand voice scorecard" : "Collapse voice scorecard");
-      window.localStorage.setItem("revisi-scorecard-collapsed", String(isCollapsed));
+      if (!mobileQuery.matches) window.localStorage.setItem("revisi-scorecard-collapsed", String(isCollapsed));
     }
 
     setCollapsed(saved);
 
-    toggle.addEventListener("click", () => {
+    mobileQuery.addEventListener("change", () => {
+      setCollapsed(mobileQuery.matches || window.localStorage.getItem("revisi-scorecard-collapsed") === "true");
+    });
+
+    toggle.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       setCollapsed(!workspace.classList.contains("is-scorecard-collapsed"));
     });
   });
@@ -131,19 +138,26 @@
   document.querySelectorAll("[data-pages-toggle]").forEach((toggle) => {
     const workspace = toggle.closest(".audit-workspace");
     if (!workspace) return;
+    const mobileQuery = window.matchMedia("(max-width: 840px)");
 
-    const saved = window.localStorage.getItem("revisi-pages-collapsed") === "true";
+    const saved = mobileQuery.matches || window.localStorage.getItem("revisi-pages-collapsed") === "true";
 
     function setCollapsed(isCollapsed) {
       workspace.classList.toggle("is-pages-collapsed", isCollapsed);
       toggle.setAttribute("aria-pressed", String(isCollapsed));
       toggle.setAttribute("aria-label", isCollapsed ? "Expand pages sidebar" : "Collapse pages sidebar");
-      window.localStorage.setItem("revisi-pages-collapsed", String(isCollapsed));
+      if (!mobileQuery.matches) window.localStorage.setItem("revisi-pages-collapsed", String(isCollapsed));
     }
 
     setCollapsed(saved);
 
-    toggle.addEventListener("click", () => {
+    mobileQuery.addEventListener("change", () => {
+      setCollapsed(mobileQuery.matches || window.localStorage.getItem("revisi-pages-collapsed") === "true");
+    });
+
+    toggle.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       setCollapsed(!workspace.classList.contains("is-pages-collapsed"));
     });
   });
@@ -152,20 +166,27 @@
     const workspace = toggle.closest(".workspace-shell");
     const rail = document.getElementById(toggle.getAttribute("aria-controls") || "");
     if (!workspace || !rail) return;
+    const mobileQuery = window.matchMedia("(max-width: 860px)");
 
-    const saved = window.localStorage.getItem("revisi-workspace-rail-collapsed") === "true";
+    const saved = !mobileQuery.matches && window.localStorage.getItem("revisi-workspace-rail-collapsed") === "true";
 
     function setRailCollapsed(isCollapsed) {
+      if (mobileQuery.matches) isCollapsed = false;
       workspace.classList.toggle("is-rail-collapsed", isCollapsed);
       toggle.setAttribute("aria-pressed", String(isCollapsed));
       toggle.setAttribute("aria-label", isCollapsed ? "Expand workspace sidebar" : "Collapse workspace sidebar");
       rail.setAttribute("aria-hidden", String(isCollapsed));
-      window.localStorage.setItem("revisi-workspace-rail-collapsed", String(isCollapsed));
+      if (!mobileQuery.matches) window.localStorage.setItem("revisi-workspace-rail-collapsed", String(isCollapsed));
     }
 
     setRailCollapsed(saved);
 
-    toggle.addEventListener("click", () => {
+    mobileQuery.addEventListener("change", () => {
+      setRailCollapsed(!mobileQuery.matches && window.localStorage.getItem("revisi-workspace-rail-collapsed") === "true");
+    });
+
+    toggle.addEventListener("click", (event) => {
+      event.preventDefault();
       setRailCollapsed(!workspace.classList.contains("is-rail-collapsed"));
     });
   });

@@ -1,4 +1,4 @@
-<nav class="workspace-tabs" aria-label="Workspace">
+{% macro workspace_tab_items(compact=False) %}
   {% if site is defined %}
     {% if active_tab == "sites" %}
       <span class="workspace-tab active">Sites <b>{{ workspace_summary.site_count }}</b></span>
@@ -18,4 +18,20 @@
   {% else %}
     <span class="workspace-tab active">Sites <b>{{ workspace_summary.site_count }}</b></span>
   {% endif %}
-</nav>
+{% endmacro %}
+
+<div class="workspace-tabs-wrap">
+  <details class="workspace-mobile-menu">
+    <summary aria-label="Open workspace navigation">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </summary>
+    <nav class="workspace-mobile-panel" aria-label="Workspace">
+      {{ workspace_tab_items(True) }}
+    </nav>
+  </details>
+  <nav class="workspace-tabs" aria-label="Workspace">
+    {{ workspace_tab_items(False) }}
+  </nav>
+</div>
