@@ -317,6 +317,87 @@
     });
   }
 
+  document.querySelectorAll("[data-site-report-chart]").forEach((chart) => {
+    const metrics = JSON.parse(chart.dataset.reportSeries || "[]");
+    const buttons = Array.from(chart.querySelectorAll("[data-report-metric]"));
+    const svg = chart.querySelector("[data-report-svg]");
+    const empty = chart.querySelector("[data-report-empty]");
+    const label = chart.querySelector("[data-report-label]");
+    const value = chart.querySelector("[data-report-value]");
+    const desc = chart.querySelector("[data-report-desc]");
+    const ns = "http://www.w3.org/2000/svg";
+
+    function clearSvg() {
+      while (svg?.firstChild) svg.removeChild(svg.firstChild);
+    }
+
+    function node(name, attrs = {}) {
+      const element = document.createElementNS(ns, name);
+      Object.entries(attrs).forEach(([key, attrValue]) => {
+        element.setAttribute(key, String(attrValue));
+      });
+      return element;
+    }
+
+    function drawMetric(metricKey) {
+      const metric = metrics.find((item) => item.key === metricKey) || metrics[0];
+      if (!metric || !svg) return;
+      const points = (metric.points || []).filter((point) => typeof point.value === "number");
+      clearSvg();
+      if (label) label.textContent = metric.label;
+      if (value) value.textContent = typeof metric.latest === "number" ? metric.latest : "--";
+      if (desc) desc.textContent = metric.desc || "";
+      if (empty) empty.hidden = points.length > 0;
+      if (!points.length) return;
+
+      const width = 720;
+      const height = 300;
+      const pad = { top: 28, right: 30, bottom: 54, left: 44 };
+      [100, 75, 50, 25].forEach((tick) => {
+        const y = pad.top + ((100 - tick) / 100) * (height - pad.top - pad.bottom);
+        svg.appendChild(node("line", { x1: pad.left, y1: y, x2: width - pad.right, y2: y, class: "grid" }));
+        const text = node("text", { x: pad.left - 14, y: y + 4, class: "axis", "text-anchor": "end" });
+        text.textContent = tick;
+        svg.appendChild(text);
+      });
+
+      const xSpan = Math.max(points.length - 1, 1);
+      const coords = points.map((point, index) => {
+        const x = pad.left + (index / xSpan) * (width - pad.left - pad.right);
+        const y = pad.top + ((100 - point.value) / 100) * (height - pad.top - pad.bottom);
+        return { ...point, x, y };
+      });
+
+      if (coords.length === 1) {
+        coords.push({ ...coords[0], x: width - pad.right });
+      }
+
+      svg.appendChild(node("polyline", {
+        points: coords.map((point) => `${point.x},${point.y}`).join(" "),
+        class: "trend",
+      }));
+
+      coords.slice(0, points.length).forEach((point) => {
+        svg.appendChild(node("circle", { cx: point.x, cy: point.y, r: 5, class: "dot" }));
+        const text = node("text", { x: point.x, y: height - 18, class: "axis", "text-anchor": "middle" });
+        text.textContent = point.label;
+        svg.appendChild(text);
+      });
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        buttons.forEach((item) => {
+          item.classList.toggle("active", item === button);
+          item.setAttribute("aria-selected", String(item === button));
+        });
+        drawMetric(button.dataset.reportMetric);
+      });
+    });
+
+    drawMetric(buttons[0]?.dataset.reportMetric || "overview");
+  });
+
   const form = document.getElementById("scan-form");
   const urlInput = document.getElementById("url-input");
   const urlBox = document.getElementById("url-box");

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Report - {{ site.name }} - Revisi{% endblock %}
+{% block main_class %}revisi-app-root{% endblock %}
+
+{% block content %}
+<div class="workspace-shell">
+  <header class="workspace-topbar">
+    <div class="workspace-brand">
+      <a href="/app" aria-label="Revisi app home">
+        <img src="{{ url_for('static', path='/revisi-wordmark.svg') }}" alt="Revisi" width="103" height="40">
+      </a>
+      <button class="workspace-rail-toggle" type="button" data-workspace-rail-toggle aria-controls="workspace-rail" aria-pressed="false" aria-label="Collapse workspace sidebar">
+        <i aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="workspace-context">
+      <span>Workspace</span>
+      <strong>{{ current_user.email }}</strong>
+      <i></i>
+      <span>{{ site.name }}</span>
+      <span>{{ scan_rows|length }} scan{% if scan_rows|length != 1 %}s{% endif %}</span>
+    </div>
+    <form class="workspace-logout" method="post" action="/logout">
+      <button type="submit">Log out</button>
+    </form>
+  </header>
+  <nav class="workspace-tabs" aria-label="Workspace">
+    <a class="workspace-tab" href="/app/sites/{{ site.id }}">Sites <b>{{ workspace_summary.site_count }}</b></a>
+    <span class="workspace-tab active">Report</span>
+    <a class="workspace-tab" href="/app/sites/{{ site.id }}/voice">Voice</a>
+  </nav>
+  <div class="workspace-grid">
+    <aside class="workspace-rail" id="workspace-rail" aria-label="Site report summary">
+      <section class="workspace-score">
+        <p>Site voice</p>
+        <strong>{% if site_summary.score is not none %}{{ site_summary.score }}{% else %}--{% endif %}</strong>
+        <span>/ 100</span>
+      </section>
+      <dl class="workspace-stats">
+        <div><dt>Pages</dt><dd>{{ site_summary.page_count }}</dd></div>
+        <div><dt>Scans</dt><dd>{{ scan_rows|length }}</dd></div>
+        <div><dt>Flags</dt><dd>{{ site_summary.issue_count }}</dd></div>
+        <div><dt>Guide</dt><dd>{% if site.brand_voice_text %}1{% else %}0{% endif %}</dd></div>
+      </dl>
+      <section class="workspace-note">
+        <p>Track whether each rescan is moving the site closer to the voice guide.</p>
+      </section>
+    </aside>
+    <main class="site-detail-main report-main">
+      <header class="voice-head report-head">
+        <div>
+          <a class="site-back" href="/app/sites/{{ site.id }}">&larr; Site pages</a>
+          <h1>Site <span>report</span>.</h1>
+          <p>Historical scan scores for {{ site.name }}. Switch metrics to see which parts of the voice are improving, slipping, or staying flat.</p>
+        </div>
+        <a class="app-button" href="/app/sites/{{ site.id }}">Open pages</a>
+      </header>
+
+      {% if flash %}<p class="app-flash workspace-message">{{ flash }}</p>{% endif %}
+
+      <section class="site-report-panel" data-site-report-chart data-report-series='{{ report_metrics|tojson }}'>
+        <div class="report-metric-chooser" role="tablist" aria-label="Report metric">
+          {% for metric in report_metrics %}
+            <button class="{% if loop.first %}active{% endif %}" type="button" role="tab" data-report-metric="{{ metric.key }}" aria-selected="{{ 'true' if loop.first else 'false' }}">
+              <span>{{ metric.label }}</span>
+              <strong>{% if metric.latest is not none %}{{ metric.latest }}{% else %}--{% endif %}</strong>
+              {% if metric.delta is not none %}
+                <em class="{% if metric.delta < 0 %}down{% elif metric.delta > 0 %}up{% endif %}">{% if metric.delta > 0 %}+{% endif %}{{ metric.delta }}</em>
+              {% else %}
+                <em>new</em>
+              {% endif %}
+            </button>
+          {% endfor %}
+        </div>
+
+        <div class="report-chart-wrap">
+          <div class="report-chart-summary">
+            <p class="app-kicker" data-report-label>Overview</p>
+            <div><strong data-report-value>{% if report_metrics and report_metrics[0].latest is not none %}{{ report_metrics[0].latest }}{% else %}--{% endif %}</strong><span>/ 100</span></div>
+            <p data-report-desc>{{ report_metrics[0].desc if report_metrics else "Run a scan to start charting this site." }}</p>
+          </div>
+          <div class="report-chart-stage">
+            <svg class="report-chart" viewBox="0 0 720 300" role="img" aria-labelledby="report-chart-title report-chart-desc" data-report-svg>
+              <title id="report-chart-title">Site score history</title>
+              <desc id="report-chart-desc">Trend line for the selected report metric.</desc>
+            </svg>
+            <div class="report-empty" data-report-empty hidden>No scan history yet. Run this site once to start the trend.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="report-history-section">
+        <header>
+          <h2>Scan history</h2>
+          <p>{{ report_rows|length }} saved scan{% if report_rows|length != 1 %}s{% endif %}</p>
+        </header>
+        <div class="report-history-table" aria-label="Scan history by metric">
+          <div class="report-history-head" aria-hidden="true">
+            <span>Date</span>
+            <span>Pages</span>
+            <span>Flags</span>
+            <span>Overview</span>
+            <span>Brand</span>
+            <span>Audience</span>
+            <span>Clarity</span>
+            <span>Human</span>
+            <span>Specificity</span>
+            <span>Trust</span>
+            <span>Distinct</span>
+          </div>
+          {% if report_rows %}
+            {% for row in report_rows %}
+              <a class="report-history-row" href="/app/sites/{{ site.id }}/scans/{{ row.scan.id }}">
+                <time datetime="{{ row.scan.created_at.isoformat() }}">{{ row.scan.created_at.strftime("%d %b, %H:%M") }}</time>
+                <span>{{ row.page_count }}</span>
+                <span class="{% if row.issue_count %}flag{% endif %}">{{ row.issue_count }}</span>
+                <strong>{{ row.overview }}</strong>
+                <span>{{ row.metrics.brand_fit if row.metrics.brand_fit is not none else "--" }}</span>
+                <span>{{ row.metrics.audience_fit if row.metrics.audience_fit is not none else "--" }}</span>
+                <span>{{ row.metrics.clarity if row.metrics.clarity is not none else "--" }}</span>
+                <span>{{ row.metrics.human_sound if row.metrics.human_sound is not none else "--" }}</span>
+                <span>{{ row.metrics.specificity if row.metrics.specificity is not none else "--" }}</span>
+                <span>{{ row.metrics.trust if row.metrics.trust is not none else "--" }}</span>
+                <span>{{ row.metrics.distinctiveness if row.metrics.distinctiveness is not none else "--" }}</span>
+              </a>
+            {% endfor %}
+          {% else %}
+            <div class="site-pages-empty">No scans yet. Run a scan to create the first report point.</div>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+{% endblock %}

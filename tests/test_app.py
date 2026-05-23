@@ -462,6 +462,74 @@ def test_app_site_voice_page_renders_per_site_guide_modal(db_session) -> None:
     assert "brand_voice_file" in response.text
 
 
+def test_app_site_report_trends_scan_metrics(db_session) -> None:
+    user = main.models.User(id="00000000-0000-4000-8000-000000000015", email="report@example.com")
+    site = main.models.Site(user=user, name="Report Site", base_url="https://report.example", domain="report.example")
+    db_session.add_all([user, site])
+    db_session.commit()
+
+    def save_report_scan(path: str, overall: int, brand_fit: int, clarity: int) -> None:
+        page = ExtractedPage(
+            url=f"https://report.example{path}",
+            title=f"Page {path}",
+            meta_description="Report page",
+            headings=["Report"],
+            ctas=["Start"],
+            lines=[ExtractedLine(source="H1", text="Clear copy for the report.")],
+        )
+        result = AuditResult(
+            overall_score=overall,
+            verdict="Clear trend data",
+            scoring_context="Site report",
+            contextual_modifiers=[],
+            scores=Scorecard(
+                brand_fit=brand_fit,
+                audience_fit=80,
+                clarity=clarity,
+                human_sound=78,
+                specificity=76,
+                trust=74,
+                distinctiveness=72,
+            ),
+            ai_sludge_risk=12,
+            top_issues=[],
+            line_level_rewrites=[],
+            voice_summary=["Direct and useful"],
+            recommended_next_action="Keep tracking the scan trend.",
+        )
+        main._save_scan_pages(
+            db_session,
+            "report.example",
+            "https://report.example",
+            site.brand_voice_text,
+            [(page, result)],
+            user=user,
+            site=site,
+            scan_mode="paid_app",
+        )
+
+    save_report_scan("/", 70, 68, 72)
+    save_report_scan("/pricing", 86, 88, 90)
+    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[main.get_current_user] = lambda: SimpleNamespace(id=user.id, email=user.email)
+    client = TestClient(app)
+
+    try:
+        response = client.get(f"/app/sites/{site.id}/report")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert "Site" in response.text
+    assert "report" in response.text
+    assert 'data-site-report-chart' in response.text
+    assert 'data-report-metric="overview"' in response.text
+    assert 'data-report-metric="brand_fit"' in response.text
+    assert "Scan history" in response.text
+    assert "86" in response.text
+    assert "/voice" in response.text
+
+
 def test_update_site_guide_accepts_markdown_upload(db_session) -> None:
     user = main.models.User(id="00000000-0000-4000-8000-000000000014", email="uploadvoice@example.com")
     site = main.models.Site(user=user, name="Upload Voice", base_url="https://upload.example", domain="upload.example")

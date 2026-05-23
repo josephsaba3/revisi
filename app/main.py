@@ -455,6 +455,19 @@ def site_voice(
     return _site_voice_response(request, current_user, site)
 
 
+@app.get("/app/sites/{site_id}/report", response_class=HTMLResponse)
+def site_report(
+    request: Request,
+    site_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User | None = Depends(get_current_user),
+) -> Response:
+    if current_user is None:
+        return RedirectResponse("/login", status_code=303)
+    site = _owned_site(db, current_user, site_id)
+    return _site_report_response(request, current_user, site)
+
+
 @app.post("/app/sites/{site_id}/guide")
 async def update_site_guide(
     request: Request,
@@ -652,6 +665,33 @@ def _site_voice_response(
     )
 
 
+def _site_report_response(
+    request: Request,
+    current_user: models.User,
+    site: models.Site,
+    *,
+    status_code: int = 200,
+) -> HTMLResponse:
+    scans = list(site.scans or [])
+    scan_rows = _scan_history_rows(scans)
+    site_summary = _site_summary_rows([site])[0]
+    return templates.TemplateResponse(
+        request,
+        "site_report.html",
+        _app_context(
+            request,
+            current_user,
+            site=site,
+            scan_rows=scan_rows,
+            site_summary=site_summary,
+            workspace_summary=_workspace_summary([site_summary]),
+            report_metrics=_site_report_metrics(scans),
+            report_rows=_site_report_rows(scans),
+        ),
+        status_code=status_code,
+    )
+
+
 def _scan_history_rows(scans: list[models.Scan]) -> list[dict]:
     rows = []
     for index, scan_model in enumerate(scans):
@@ -711,24 +751,120 @@ def _page_type_label(path: str, title: str | None) -> str:
 
 def _site_metric_rows(latest_scan: models.Scan | None) -> list[dict]:
     pages = list(latest_scan.page_results or []) if latest_scan else []
-    metrics = [
-        ("Brand Fit", "brand_fit"),
-        ("Audience Fit", "audience_fit"),
-        ("Clarity", "clarity"),
-        ("Human Sound", "human_sound"),
-        ("Specificity", "specificity"),
-        ("Trust", "trust"),
-        ("Distinctiveness", "distinctiveness"),
+    rows = []
+    for metric in _score_metric_definitions():
+        value = _page_metric_average(pages, metric["key"])
+        rows.append({"label": metric["label"], "key": metric["key"], "value": value or 0, "desc": metric["desc"]})
+    return rows
+
+
+def _site_report_metrics(scans: list[models.Scan]) -> list[dict]:
+    ordered_scans = list(reversed(scans))
+    definitions = [
+        {
+            "key": "overview",
+            "label": "Overview",
+            "desc": "Average site voice score across every page saved in each scan.",
+        },
+        *_score_metric_definitions(),
     ]
     rows = []
-    for label, key in metrics:
-        values = [
-            page.scores.get(key)
-            for page in pages
-            if isinstance(page.scores, dict) and isinstance(page.scores.get(key), (int, float))
-        ]
-        rows.append({"label": label, "value": round(sum(values) / len(values)) if values else 0})
+    for metric in definitions:
+        points = []
+        for scan_model in ordered_scans:
+            value = _scan_score(scan_model) if metric["key"] == "overview" else _scan_metric_average(scan_model, metric["key"])
+            points.append(
+                {
+                    "scan_id": scan_model.id,
+                    "value": value,
+                    "label": scan_model.created_at.strftime("%d %b") if scan_model.created_at else f"Scan {scan_model.id}",
+                    "full_label": scan_model.created_at.strftime("%d %b, %H:%M") if scan_model.created_at else f"Scan {scan_model.id}",
+                    "page_count": len(scan_model.page_results or []),
+                }
+            )
+        latest = points[-1]["value"] if points else None
+        previous = points[-2]["value"] if len(points) > 1 else None
+        rows.append(
+            {
+                "key": metric["key"],
+                "label": metric["label"],
+                "desc": metric["desc"],
+                "latest": latest,
+                "delta": None if latest is None or previous is None else latest - previous,
+                "points": points,
+            }
+        )
     return rows
+
+
+def _site_report_rows(scans: list[models.Scan]) -> list[dict]:
+    rows = []
+    for scan_model in scans:
+        pages = list(scan_model.page_results or [])
+        metrics = {metric["key"]: _page_metric_average(pages, metric["key"]) for metric in _score_metric_definitions()}
+        rows.append(
+            {
+                "scan": scan_model,
+                "overview": _scan_score(scan_model),
+                "page_count": len(pages),
+                "issue_count": sum(len(page.issues or []) for page in pages),
+                "metrics": metrics,
+            }
+        )
+    return rows
+
+
+def _score_metric_definitions() -> list[dict]:
+    return [
+        {
+            "label": "Brand Fit",
+            "key": "brand_fit",
+            "desc": "How closely the pages match the intended voice and avoid tone drift.",
+        },
+        {
+            "label": "Audience Fit",
+            "key": "audience_fit",
+            "desc": "Whether the copy speaks to the right reader, situation, and buying stage.",
+        },
+        {
+            "label": "Clarity",
+            "key": "clarity",
+            "desc": "How quickly a reader can understand the offer, value, and next step.",
+        },
+        {
+            "label": "Human Sound",
+            "key": "human_sound",
+            "desc": "Whether the copy feels natural, specific, and free of generated polish.",
+        },
+        {
+            "label": "Specificity",
+            "key": "specificity",
+            "desc": "How much concrete detail, proof, workflow, or real-world texture is present.",
+        },
+        {
+            "label": "Trust",
+            "key": "trust",
+            "desc": "Whether claims feel supported, transparent, and believable.",
+        },
+        {
+            "label": "Distinctiveness",
+            "key": "distinctiveness",
+            "desc": "How hard the pages are to confuse with another brand in the same category.",
+        },
+    ]
+
+
+def _scan_metric_average(scan_model: models.Scan, key: str) -> int | None:
+    return _page_metric_average(list(scan_model.page_results or []), key)
+
+
+def _page_metric_average(pages: list[models.PageResult], key: str) -> int | None:
+    values = [
+        page.scores.get(key)
+        for page in pages
+        if isinstance(page.scores, dict) and isinstance(page.scores.get(key), (int, float))
+    ]
+    return round(sum(values) / len(values)) if values else None
 
 
 def _site_summary_rows(sites: list[models.Site]) -> list[dict]:

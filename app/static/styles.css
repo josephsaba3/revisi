@@ -1400,6 +1400,262 @@ button:disabled {
   white-space: pre-wrap;
 }
 
+.report-main {
+  min-width: 0;
+}
+
+.report-head .app-button {
+  align-self: center;
+}
+
+.site-report-panel {
+  border-bottom: 1px solid var(--workspace-line);
+}
+
+.report-metric-chooser {
+  border-bottom: 1px solid var(--workspace-line);
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
+.report-metric-chooser button {
+  min-width: 0;
+  min-height: 104px;
+  border: 0;
+  border-right: 1px solid var(--workspace-line);
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  padding: 18px 16px;
+  background: var(--workspace-paper);
+  color: #0a0a0a;
+  cursor: pointer;
+  text-align: left;
+}
+
+.report-metric-chooser button:last-child {
+  border-right: 0;
+}
+
+.report-metric-chooser button:hover,
+.report-metric-chooser button.active {
+  background: var(--workspace-paper-2);
+}
+
+.report-metric-chooser button.active {
+  box-shadow: inset 0 -2px 0 var(--workspace-accent);
+}
+
+.report-metric-chooser span {
+  overflow: hidden;
+  color: var(--workspace-muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.report-metric-chooser strong {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.report-metric-chooser em {
+  color: var(--workspace-muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.report-metric-chooser em.up {
+  color: var(--ok);
+}
+
+.report-metric-chooser em.down {
+  color: var(--workspace-accent-deep);
+}
+
+.report-chart-wrap {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  min-height: 384px;
+}
+
+.report-chart-summary {
+  border-right: 1px solid var(--workspace-line);
+  display: grid;
+  align-content: center;
+  gap: 14px;
+  padding: 34px;
+}
+
+.report-chart-summary div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.report-chart-summary strong {
+  color: var(--workspace-accent);
+  font-size: 72px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 0.86;
+}
+
+.report-chart-summary div span {
+  color: var(--workspace-muted);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.report-chart-summary p:last-child {
+  color: var(--workspace-muted-2);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.report-chart-stage {
+  min-width: 0;
+  position: relative;
+  display: grid;
+  align-items: center;
+  padding: 34px 42px 26px;
+}
+
+.report-chart {
+  width: 100%;
+  min-height: 260px;
+  overflow: visible;
+}
+
+.report-chart .grid {
+  stroke: var(--workspace-line);
+  stroke-width: 1;
+}
+
+.report-chart .axis {
+  fill: var(--workspace-muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.report-chart .trend {
+  fill: none;
+  stroke: #0a0a0a;
+  stroke-linecap: square;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.report-chart .dot {
+  fill: var(--workspace-paper);
+  stroke: var(--workspace-accent);
+  stroke-width: 3;
+}
+
+.report-empty {
+  color: var(--workspace-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.report-history-section {
+  padding: 40px 60px 70px;
+}
+
+.report-history-section > header {
+  margin-bottom: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 24px;
+}
+
+.report-history-section h2 {
+  color: #0a0a0a;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.report-history-section > header p {
+  color: var(--workspace-muted);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.report-history-head,
+.report-history-row {
+  display: grid;
+  grid-template-columns: minmax(126px, 1fr) 58px 58px 82px repeat(7, 74px);
+  gap: 12px;
+  align-items: center;
+}
+
+.report-history-head {
+  border-bottom: 1px solid var(--workspace-line);
+  padding: 12px 0 13px;
+  color: var(--workspace-muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.report-history-head span:nth-child(n + 2),
+.report-history-row span,
+.report-history-row strong {
+  text-align: right;
+}
+
+.report-history-row {
+  border-bottom: 1px solid var(--workspace-line);
+  padding: 17px 0;
+  color: #0a0a0a;
+}
+
+.report-history-row:hover {
+  margin-inline: -14px;
+  padding-inline: 14px;
+  background: var(--workspace-paper-2);
+}
+
+.report-history-row time {
+  color: var(--workspace-muted-2);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.report-history-row span {
+  color: var(--workspace-muted-2);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.report-history-row span.flag {
+  color: var(--workspace-accent-deep);
+}
+
+.report-history-row strong {
+  color: #0a0a0a;
+  font-size: 20px;
+  line-height: 1;
+}
+
 .app-bar {
   min-height: 72px;
   border-bottom: 1px solid #0a0a0a;
@@ -1909,6 +2165,57 @@ button:disabled {
 
   .voice-guide-preview {
     width: 100%;
+  }
+
+  .report-metric-chooser {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .report-metric-chooser button {
+    border-bottom: 1px solid var(--workspace-line);
+  }
+
+  .report-metric-chooser button:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .report-chart-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .report-chart-summary {
+    border-right: 0;
+    border-bottom: 1px solid var(--workspace-line);
+    padding: 28px 20px;
+  }
+
+  .report-chart-stage {
+    padding: 28px 20px 20px;
+  }
+
+  .report-history-section {
+    padding: 36px 20px 48px;
+  }
+
+  .report-history-section > header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .report-history-table {
+    overflow-x: auto;
+  }
+
+  .report-history-head,
+  .report-history-row {
+    min-width: 920px;
+  }
+
+  .report-history-row:hover {
+    margin-inline: 0;
+    padding-inline: 0;
+    background: transparent;
   }
 
   .app-layout {
