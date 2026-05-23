@@ -1811,7 +1811,7 @@ button:disabled {
 
   .workspace-brand {
     min-height: 72px;
-    padding-inline: 20px 12px;
+    padding-inline: 72px 12px;
   }
 
   .workspace-tabs {
@@ -1821,7 +1821,7 @@ button:disabled {
   .workspace-context {
     position: absolute;
     top: 15px;
-    right: 112px;
+    left: 16px;
     z-index: 30;
     display: block;
     border-left: 0;
@@ -4473,6 +4473,10 @@ button:disabled {
   transform: translateY(-1px);
 }
 
+.pages-toggle svg {
+  display: block;
+}
+
 .audit-workspace.is-pages-collapsed .audit-topbar {
   grid-template-columns: 52px 1fr 450px;
 }
@@ -4937,6 +4941,10 @@ button:disabled {
 .scorecard-toggle span {
   display: block;
   transform: translateY(-1px);
+}
+
+.scorecard-toggle svg {
+  display: block;
 }
 
 .audit-workspace.is-scorecard-collapsed .audit-topbar {
@@ -7346,7 +7354,7 @@ button:disabled {
   .audit-workspace.is-pages-collapsed.is-scorecard-collapsed {
     position: relative;
     display: grid;
-    grid-template-columns: 52px minmax(0, 1fr) 52px;
+    grid-template-columns: 52px minmax(0, 1fr);
     grid-template-rows: 70px minmax(0, 1fr) auto;
     width: 100%;
     max-width: 100vw;
@@ -7359,7 +7367,7 @@ button:disabled {
   .audit-workspace.is-pages-collapsed .audit-topbar,
   .audit-workspace.is-scorecard-collapsed .audit-topbar,
   .audit-workspace.is-pages-collapsed.is-scorecard-collapsed .audit-topbar {
-    grid-template-columns: 52px minmax(0, 1fr) 52px;
+    grid-template-columns: 52px minmax(0, 1fr);
     grid-column: 1 / -1;
     grid-row: 1;
     min-width: 0;
@@ -7392,13 +7400,7 @@ button:disabled {
   }
 
   .audit-actions {
-    display: flex;
-    grid-column: 3;
-    padding: 0;
-  }
-
-  .action-menu {
-    margin: auto;
+    display: none;
   }
 
   .audit-pages,
@@ -7418,8 +7420,10 @@ button:disabled {
   }
 
   .scorecard-panel {
-    grid-column: 3;
-    border-left: 1px solid var(--line);
+    grid-column: 1;
+    margin-top: 70px;
+    border-right: 1px solid var(--line);
+    border-left: 0;
   }
 
   .audit-workspace:not(.is-pages-collapsed) .audit-pages,
@@ -7427,17 +7431,15 @@ button:disabled {
     position: absolute;
     top: 70px;
     bottom: 0;
-    width: min(82vw, 340px);
+    width: min(88vw, 360px);
+    margin-top: 0;
     overflow-y: auto;
     box-shadow: 0 0 0 1px var(--line);
   }
 
-  .audit-workspace:not(.is-pages-collapsed) .audit-pages {
-    left: 0;
-  }
-
+  .audit-workspace:not(.is-pages-collapsed) .audit-pages,
   .audit-workspace:not(.is-scorecard-collapsed) .scorecard-panel {
-    right: 0;
+    left: 0;
   }
 
   .page-list-head,
@@ -7474,17 +7476,13 @@ button:disabled {
 
   .audit-workspace.is-pages-collapsed .page-list-head,
   .audit-workspace.is-scorecard-collapsed .scorecard-head {
-    height: 100%;
+    height: 70px;
   }
 
   .audit-workspace.is-pages-collapsed .pages-toggle,
-  .audit-workspace.is-scorecard-collapsed .scorecard-toggle {
-    transform: none;
-  }
-
-  .audit-workspace:not(.is-pages-collapsed) .pages-toggle,
+  .audit-workspace.is-scorecard-collapsed .scorecard-toggle,
   .audit-workspace:not(.is-scorecard-collapsed) .scorecard-toggle {
-    transform: rotate(180deg);
+    transform: none;
   }
 
   .audit-document {

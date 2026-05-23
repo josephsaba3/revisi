@@ -131,7 +131,14 @@
     toggle.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      setCollapsed(!workspace.classList.contains("is-scorecard-collapsed"));
+      const nextCollapsed = !workspace.classList.contains("is-scorecard-collapsed");
+      if (mobileQuery.matches && !nextCollapsed) {
+        workspace.classList.add("is-pages-collapsed");
+        const pagesToggle = workspace.querySelector("[data-pages-toggle]");
+        pagesToggle?.setAttribute("aria-pressed", "true");
+        pagesToggle?.setAttribute("aria-label", "Expand pages sidebar");
+      }
+      setCollapsed(nextCollapsed);
     });
   });
 
@@ -158,7 +165,14 @@
     toggle.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      setCollapsed(!workspace.classList.contains("is-pages-collapsed"));
+      const nextCollapsed = !workspace.classList.contains("is-pages-collapsed");
+      if (mobileQuery.matches && !nextCollapsed) {
+        workspace.classList.add("is-scorecard-collapsed");
+        const scorecardToggle = workspace.querySelector("[data-scorecard-toggle]");
+        scorecardToggle?.setAttribute("aria-pressed", "true");
+        scorecardToggle?.setAttribute("aria-label", "Expand voice scorecard");
+      }
+      setCollapsed(nextCollapsed);
     });
   });
 
