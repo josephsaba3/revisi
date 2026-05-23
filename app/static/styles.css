@@ -1870,7 +1870,7 @@ button:disabled {
   .workspace-mobile-panel {
     position: absolute;
     top: calc(100% + 8px);
-    right: 0;
+    left: 0;
     width: min(240px, calc(100vw - 32px));
     border: 1px solid var(--workspace-line);
     display: grid;
