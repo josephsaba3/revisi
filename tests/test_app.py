@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from app.config import get_settings
 from app import main
 from app.main import _complete_job, _create_scan_job, _perform_scan, _save_scan, _scan_attempts, _scan_jobs
@@ -329,6 +331,7 @@ def test_app_site_workspace_lists_owned_sites(db_session) -> None:
     try:
         response = client.get("/app")
         detail = client.get(f"/app/sites/{other_site.id}")
+        report = client.get(f"/app/sites/{other_site.id}/report")
     finally:
         app.dependency_overrides.clear()
 
@@ -347,6 +350,7 @@ def test_app_site_workspace_lists_owned_sites(db_session) -> None:
     assert "First scan pending" in response.text
     assert "Other Site" not in response.text
     assert detail.status_code == 404
+    assert report.status_code == 404
 
 
 def test_app_site_detail_renders_latest_pages_table(db_session) -> None:
@@ -528,6 +532,68 @@ def test_app_site_report_trends_scan_metrics(db_session) -> None:
     assert "Scan history" in response.text
     assert "86" in response.text
     assert "/voice" in response.text
+
+
+def test_app_site_report_limits_history_to_recent_50_scans(db_session) -> None:
+    user = main.models.User(id="00000000-0000-4000-8000-000000000016", email="cap@example.com")
+    site = main.models.Site(user=user, name="Capped Site", base_url="https://cap.example", domain="cap.example")
+    db_session.add_all([user, site])
+    db_session.commit()
+    started = datetime(2026, 1, 1, 8, 0)
+    for index in range(55):
+        scan = main.models.Scan(
+            submitted_url="cap.example",
+            normalized_url="https://cap.example",
+            user=user,
+            site=site,
+            scan_mode="paid_app",
+            brand_voice_source="provided",
+            brand_voice_text="Plain voice.",
+            created_at=started + timedelta(days=index),
+        )
+        scan.page_results = [
+            main.models.PageResult(
+                url=f"https://cap.example/page-{index}",
+                title=f"Page {index}",
+                meta_description="",
+                headings=[],
+                ctas=[],
+                extracted_copy=[],
+                overall_score=index,
+                verdict="Trend point",
+                scoring_context="History cap",
+                contextual_modifiers=[],
+                scores={
+                    "brand_fit": index,
+                    "audience_fit": index,
+                    "clarity": index,
+                    "human_sound": index,
+                    "specificity": index,
+                    "trust": index,
+                    "distinctiveness": index,
+                },
+                ai_sludge_risk=0,
+                voice_summary=[],
+                recommended_next_action="Keep tracking.",
+                raw_result={},
+            )
+        ]
+        db_session.add(scan)
+    db_session.commit()
+    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[main.get_current_user] = lambda: SimpleNamespace(id=user.id, email=user.email)
+    client = TestClient(app)
+
+    try:
+        response = client.get(f"/app/sites/{site.id}/report")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert "55 saved scans" in response.text
+    assert "24 Feb" in response.text
+    assert "05 Jan" not in response.text
+    assert response.text.count("scan_id") == 400
 
 
 def test_update_site_guide_accepts_markdown_upload(db_session) -> None:

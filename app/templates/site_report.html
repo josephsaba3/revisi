@@ -19,17 +19,14 @@
       <strong>{{ current_user.email }}</strong>
       <i></i>
       <span>{{ site.name }}</span>
-      <span>{{ scan_rows|length }} scan{% if scan_rows|length != 1 %}s{% endif %}</span>
+      <span>{{ site_summary.scan_count }} scan{% if site_summary.scan_count != 1 %}s{% endif %}</span>
     </div>
     <form class="workspace-logout" method="post" action="/logout">
       <button type="submit">Log out</button>
     </form>
   </header>
-  <nav class="workspace-tabs" aria-label="Workspace">
-    <a class="workspace-tab" href="/app/sites/{{ site.id }}">Sites <b>{{ workspace_summary.site_count }}</b></a>
-    <span class="workspace-tab active">Report</span>
-    <a class="workspace-tab" href="/app/sites/{{ site.id }}/voice">Voice</a>
-  </nav>
+  {% set active_tab = "report" %}
+  {% include "_workspace_tabs.html" %}
   <div class="workspace-grid">
     <aside class="workspace-rail" id="workspace-rail" aria-label="Site report summary">
       <section class="workspace-score">
@@ -39,7 +36,7 @@
       </section>
       <dl class="workspace-stats">
         <div><dt>Pages</dt><dd>{{ site_summary.page_count }}</dd></div>
-        <div><dt>Scans</dt><dd>{{ scan_rows|length }}</dd></div>
+        <div><dt>Scans</dt><dd>{{ site_summary.scan_count }}</dd></div>
         <div><dt>Flags</dt><dd>{{ site_summary.issue_count }}</dd></div>
         <div><dt>Guide</dt><dd>{% if site.brand_voice_text %}1{% else %}0{% endif %}</dd></div>
       </dl>
@@ -93,7 +90,7 @@
       <section class="report-history-section">
         <header>
           <h2>Scan history</h2>
-          <p>{{ report_rows|length }} saved scan{% if report_rows|length != 1 %}s{% endif %}</p>
+          <p>{{ site_summary.scan_count }} saved scan{% if site_summary.scan_count != 1 %}s{% endif %}</p>
         </header>
         <div class="report-history-table" aria-label="Scan history by metric">
           <div class="report-history-head" aria-hidden="true">

@@ -1,0 +1,21 @@
+<nav class="workspace-tabs" aria-label="Workspace">
+  {% if site is defined %}
+    {% if active_tab == "sites" %}
+      <span class="workspace-tab active">Sites <b>{{ workspace_summary.site_count }}</b></span>
+    {% else %}
+      <a class="workspace-tab" href="/app/sites/{{ site.id }}">Sites <b>{{ workspace_summary.site_count }}</b></a>
+    {% endif %}
+    {% if active_tab == "report" %}
+      <span class="workspace-tab active">Report</span>
+    {% else %}
+      <a class="workspace-tab" href="/app/sites/{{ site.id }}/report">Report</a>
+    {% endif %}
+    {% if active_tab == "voice" %}
+      <span class="workspace-tab active">Voice</span>
+    {% else %}
+      <a class="workspace-tab" href="/app/sites/{{ site.id }}/voice">Voice</a>
+    {% endif %}
+  {% else %}
+    <span class="workspace-tab active">Sites <b>{{ workspace_summary.site_count }}</b></span>
+  {% endif %}
+</nav>

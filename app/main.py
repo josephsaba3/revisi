@@ -14,6 +14,7 @@ from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -52,6 +53,7 @@ DEFAULT_SEO_DESCRIPTION = (
 _scan_attempts: dict[str, list[float]] = {}
 _scan_jobs: dict[str, dict] = {}
 _scan_job_ttl_seconds = 1800
+REPORT_SCAN_HISTORY_LIMIT = 50
 _scan_steps = [
     {"key": "validate", "label": "Checking the URL"},
     {"key": "guide", "label": "Reading the design guide"},
@@ -439,7 +441,7 @@ def site_detail(
     if current_user is None:
         return RedirectResponse("/login", status_code=303)
     site = _owned_site(db, current_user, site_id)
-    return _site_response(request, current_user, site)
+    return _site_response(request, current_user, site, db)
 
 
 @app.get("/app/sites/{site_id}/voice", response_class=HTMLResponse)
@@ -465,7 +467,7 @@ def site_report(
     if current_user is None:
         return RedirectResponse("/login", status_code=303)
     site = _owned_site(db, current_user, site_id)
-    return _site_report_response(request, current_user, site)
+    return _site_report_response(request, current_user, site, db)
 
 
 @app.post("/app/sites/{site_id}/guide")
@@ -608,16 +610,23 @@ def _site_response(
     request: Request,
     current_user: models.User,
     site: models.Site,
+    db: Session,
     *,
     error: str | None = None,
     status_code: int = 200,
 ) -> HTMLResponse:
-    scans = list(site.scans or [])
-    scan_rows = _scan_history_rows(scans)
-    latest_scan = scan_rows[0] if scan_rows else None
-    latest_scan_model = latest_scan["scan"] if latest_scan else None
-    site_summary = _site_summary_rows([site])[0]
-    return templates.TemplateResponse(
+    started_at = time.perf_counter()
+    query_started_at = time.perf_counter()
+    latest_scan = _latest_site_scan(db, current_user, site)
+    scan_count = _site_scan_count(db, current_user, site)
+    page_rows = _latest_site_page_summary_rows(db, site, latest_scan)
+    site_summary = _site_summary_from_page_rows(site, latest_scan, scan_count, page_rows)
+    scan_rows = _compact_scan_history_rows([latest_scan] if latest_scan else [], {latest_scan["id"]: page_rows} if latest_scan else {})
+    metric_rows = _site_metric_rows_from_page_summaries(page_rows)
+    query_elapsed = time.perf_counter() - query_started_at
+
+    template_started_at = time.perf_counter()
+    response = templates.TemplateResponse(
         request,
         "site_detail.html",
         _app_context(
@@ -625,15 +634,25 @@ def _site_response(
             current_user,
             site=site,
             scan_rows=scan_rows,
-            latest_scan=latest_scan,
+            latest_scan=scan_rows[0] if scan_rows else None,
             site_summary=site_summary,
             workspace_summary=_workspace_summary([site_summary]),
-            page_rows=_site_page_rows(site, latest_scan_model),
-            metric_rows=_site_metric_rows(latest_scan_model),
+            page_rows=_site_page_rows_from_summary(site, latest_scan, page_rows),
+            metric_rows=metric_rows,
             error=error,
         ),
         status_code=status_code,
     )
+    template_elapsed = time.perf_counter() - template_started_at
+    logger.info(
+        "site_detail loaded in %.3fs (query %.3fs, template %.3fs, scans=%s, pages=%s)",
+        time.perf_counter() - started_at,
+        query_elapsed,
+        template_elapsed,
+        scan_count,
+        len(page_rows),
+    )
+    return response
 
 
 def _site_voice_response(
@@ -669,13 +688,24 @@ def _site_report_response(
     request: Request,
     current_user: models.User,
     site: models.Site,
+    db: Session,
     *,
     status_code: int = 200,
 ) -> HTMLResponse:
-    scans = list(site.scans or [])
-    scan_rows = _scan_history_rows(scans)
-    site_summary = _site_summary_rows([site])[0]
-    return templates.TemplateResponse(
+    started_at = time.perf_counter()
+    query_started_at = time.perf_counter()
+    latest_scan = _latest_site_scan(db, current_user, site)
+    scan_count = _site_scan_count(db, current_user, site)
+    latest_page_rows = _latest_site_page_summary_rows(db, site, latest_scan)
+    site_summary = _site_summary_from_page_rows(site, latest_scan, scan_count, latest_page_rows)
+    report_scans = _site_report_scan_rows(db, current_user, site)
+    report_pages = _site_report_page_summary_rows(db, [scan["id"] for scan in report_scans])
+    scan_rows = _compact_scan_history_rows(report_scans, report_pages)
+    report_rows = _site_report_rows_from_summary(report_scans, report_pages)
+    query_elapsed = time.perf_counter() - query_started_at
+
+    template_started_at = time.perf_counter()
+    response = templates.TemplateResponse(
         request,
         "site_report.html",
         _app_context(
@@ -685,11 +715,248 @@ def _site_report_response(
             scan_rows=scan_rows,
             site_summary=site_summary,
             workspace_summary=_workspace_summary([site_summary]),
-            report_metrics=_site_report_metrics(scans),
-            report_rows=_site_report_rows(scans),
+            report_metrics=_site_report_metrics_from_summary(report_scans, report_pages),
+            report_rows=report_rows,
         ),
         status_code=status_code,
     )
+    template_elapsed = time.perf_counter() - template_started_at
+    logger.info(
+        "site_report loaded in %.3fs (query %.3fs, template %.3fs, scans=%s/%s, pages=%s)",
+        time.perf_counter() - started_at,
+        query_elapsed,
+        template_elapsed,
+        len(report_scans),
+        scan_count,
+        sum(len(pages) for pages in report_pages.values()),
+    )
+    return response
+
+
+def _latest_site_scan(db: Session, current_user: models.User, site: models.Site) -> dict | None:
+    row = (
+        db.query(models.Scan.id, models.Scan.created_at)
+        .filter(models.Scan.site_id == site.id, models.Scan.user_id == current_user.id)
+        .order_by(models.Scan.created_at.desc(), models.Scan.id.desc())
+        .first()
+    )
+    return {"id": row.id, "created_at": row.created_at} if row else None
+
+
+def _site_scan_count(db: Session, current_user: models.User, site: models.Site) -> int:
+    return (
+        db.query(func.count(models.Scan.id))
+        .filter(models.Scan.site_id == site.id, models.Scan.user_id == current_user.id)
+        .scalar()
+        or 0
+    )
+
+
+def _latest_site_page_summary_rows(db: Session, site: models.Site, latest_scan: dict | None) -> list[dict]:
+    if latest_scan is None:
+        return []
+    rows = (
+        db.query(
+            models.PageResult.id,
+            models.PageResult.url,
+            models.PageResult.title,
+            models.PageResult.overall_score,
+            models.PageResult.scores,
+            func.count(models.Issue.id).label("issue_count"),
+        )
+        .outerjoin(models.Issue, models.Issue.page_result_id == models.PageResult.id)
+        .filter(models.PageResult.scan_id == latest_scan["id"])
+        .group_by(models.PageResult.id)
+        .order_by(models.PageResult.id)
+        .all()
+    )
+    return [
+        {
+            "id": row.id,
+            "url": row.url,
+            "title": row.title,
+            "overall_score": row.overall_score,
+            "scores": row.scores if isinstance(row.scores, dict) else {},
+            "issue_count": row.issue_count or 0,
+        }
+        for row in rows
+    ]
+
+
+def _site_report_scan_rows(db: Session, current_user: models.User, site: models.Site) -> list[dict]:
+    rows = (
+        db.query(models.Scan.id, models.Scan.created_at)
+        .filter(models.Scan.site_id == site.id, models.Scan.user_id == current_user.id)
+        .order_by(models.Scan.created_at.desc(), models.Scan.id.desc())
+        .limit(REPORT_SCAN_HISTORY_LIMIT)
+        .all()
+    )
+    return [{"id": row.id, "created_at": row.created_at} for row in rows]
+
+
+def _site_report_page_summary_rows(db: Session, scan_ids: list[int]) -> dict[int, list[dict]]:
+    if not scan_ids:
+        return {}
+    rows = (
+        db.query(
+            models.PageResult.scan_id,
+            models.PageResult.id,
+            models.PageResult.overall_score,
+            models.PageResult.scores,
+            func.count(models.Issue.id).label("issue_count"),
+        )
+        .outerjoin(models.Issue, models.Issue.page_result_id == models.PageResult.id)
+        .filter(models.PageResult.scan_id.in_(scan_ids))
+        .group_by(models.PageResult.id)
+        .order_by(models.PageResult.scan_id, models.PageResult.id)
+        .all()
+    )
+    grouped: dict[int, list[dict]] = {scan_id: [] for scan_id in scan_ids}
+    for row in rows:
+        grouped.setdefault(row.scan_id, []).append(
+            {
+                "id": row.id,
+                "overall_score": row.overall_score,
+                "scores": row.scores if isinstance(row.scores, dict) else {},
+                "issue_count": row.issue_count or 0,
+            }
+        )
+    return grouped
+
+
+def _site_summary_from_page_rows(site: models.Site, latest_scan: dict | None, scan_count: int, page_rows: list[dict]) -> dict:
+    return {
+        "site": site,
+        "latest_scan": latest_scan,
+        "scan_count": scan_count,
+        "page_count": len(page_rows),
+        "issue_count": sum(row["issue_count"] for row in page_rows),
+        "score": _page_overview_average(page_rows) if latest_scan else None,
+    }
+
+
+def _compact_scan_history_rows(scans: list[dict], pages_by_scan: dict[int, list[dict]]) -> list[dict]:
+    rows = []
+    for index, scan_row in enumerate(scans):
+        pages = pages_by_scan.get(scan_row["id"], [])
+        score = _page_overview_average(pages)
+        previous_scan = scans[index + 1] if index + 1 < len(scans) else None
+        previous_score = _page_overview_average(pages_by_scan.get(previous_scan["id"], [])) if previous_scan else None
+        rows.append(
+            {
+                "scan": scan_row,
+                "score": score,
+                "page_count": len(pages),
+                "delta": None if previous_score is None else score - previous_score,
+            }
+        )
+    return rows
+
+
+def _site_page_rows_from_summary(site: models.Site, latest_scan: dict | None, page_rows: list[dict]) -> list[dict]:
+    if latest_scan is None:
+        return []
+    rows = []
+    for index, page in enumerate(page_rows):
+        parsed = urlparse(page["url"])
+        path = parsed.path or "/"
+        rows.append(
+            {
+                "page": {"id": page["id"]},
+                "position": index + 1,
+                "title": page["title"] or path or site.name,
+                "path": path,
+                "type": _page_type_label(path, page["title"]),
+                "issue_count": page["issue_count"],
+                "score": page["overall_score"],
+                "last_scan": latest_scan["created_at"],
+                "report_url": f"/app/sites/{site.id}/scans/{latest_scan['id']}?page={page['id']}",
+            }
+        )
+    return rows
+
+
+def _site_metric_rows_from_page_summaries(page_rows: list[dict]) -> list[dict]:
+    rows = []
+    for metric in _score_metric_definitions():
+        value = _page_metric_average_from_summaries(page_rows, metric["key"])
+        rows.append({"label": metric["label"], "key": metric["key"], "value": value or 0, "desc": metric["desc"]})
+    return rows
+
+
+def _site_report_metrics_from_summary(scans: list[dict], pages_by_scan: dict[int, list[dict]]) -> list[dict]:
+    ordered_scans = list(reversed(scans))
+    definitions = [
+        {
+            "key": "overview",
+            "label": "Overview",
+            "desc": "Average site voice score across every page saved in each scan.",
+        },
+        *_score_metric_definitions(),
+    ]
+    rows = []
+    for metric in definitions:
+        points = []
+        for scan_row in ordered_scans:
+            pages = pages_by_scan.get(scan_row["id"], [])
+            value = (
+                _page_overview_average(pages)
+                if metric["key"] == "overview"
+                else _page_metric_average_from_summaries(pages, metric["key"])
+            )
+            points.append(
+                {
+                    "scan_id": scan_row["id"],
+                    "value": value,
+                    "label": scan_row["created_at"].strftime("%d %b") if scan_row["created_at"] else f"Scan {scan_row['id']}",
+                    "full_label": scan_row["created_at"].strftime("%d %b, %H:%M") if scan_row["created_at"] else f"Scan {scan_row['id']}",
+                    "page_count": len(pages),
+                }
+            )
+        latest = points[-1]["value"] if points else None
+        previous = points[-2]["value"] if len(points) > 1 else None
+        rows.append(
+            {
+                "key": metric["key"],
+                "label": metric["label"],
+                "desc": metric["desc"],
+                "latest": latest,
+                "delta": None if latest is None or previous is None else latest - previous,
+                "points": points,
+            }
+        )
+    return rows
+
+
+def _site_report_rows_from_summary(scans: list[dict], pages_by_scan: dict[int, list[dict]]) -> list[dict]:
+    rows = []
+    for scan_row in scans:
+        pages = pages_by_scan.get(scan_row["id"], [])
+        metrics = {metric["key"]: _page_metric_average_from_summaries(pages, metric["key"]) for metric in _score_metric_definitions()}
+        rows.append(
+            {
+                "scan": scan_row,
+                "overview": _page_overview_average(pages),
+                "page_count": len(pages),
+                "issue_count": sum(page["issue_count"] for page in pages),
+                "metrics": metrics,
+            }
+        )
+    return rows
+
+
+def _page_overview_average(page_rows: list[dict]) -> int:
+    values = [row["overall_score"] for row in page_rows if isinstance(row.get("overall_score"), (int, float))]
+    return round(sum(values) / len(values)) if values else 0
+
+
+def _page_metric_average_from_summaries(page_rows: list[dict], key: str) -> int | None:
+    values = [
+        row["scores"].get(key)
+        for row in page_rows
+        if isinstance(row.get("scores"), dict) and isinstance(row["scores"].get(key), (int, float))
+    ]
+    return round(sum(values) / len(values)) if values else None
 
 
 def _scan_history_rows(scans: list[models.Scan]) -> list[dict]:
@@ -876,6 +1143,7 @@ def _site_summary_rows(sites: list[models.Site]) -> list[dict]:
             {
                 "site": site,
                 "latest_scan": latest_scan,
+                "scan_count": len(site.scans or []),
                 "page_count": len(page_results),
                 "issue_count": sum(len(page.issues or []) for page in page_results),
                 "score": _scan_score(latest_scan) if latest_scan else None,

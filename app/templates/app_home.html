@@ -25,9 +25,8 @@
       <button type="submit">Log out</button>
     </form>
   </header>
-  <nav class="workspace-tabs" aria-label="Workspace">
-    <span class="workspace-tab active">Sites <b>{{ workspace_summary.site_count }}</b></span>
-  </nav>
+  {% set active_tab = "sites" %}
+  {% include "_workspace_tabs.html" %}
   <div class="workspace-grid">
     <aside class="workspace-rail" id="workspace-rail" aria-label="Workspace summary">
       <section class="workspace-score">

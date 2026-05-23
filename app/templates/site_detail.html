@@ -25,11 +25,8 @@
       <button type="submit">Log out</button>
     </form>
   </header>
-  <nav class="workspace-tabs" aria-label="Workspace">
-    <a class="workspace-tab active" href="/app">Sites <b>{{ workspace_summary.site_count }}</b></a>
-    <a class="workspace-tab" href="/app/sites/{{ site.id }}/report">Report</a>
-    <a class="workspace-tab" href="/app/sites/{{ site.id }}/voice">Voice</a>
-  </nav>
+  {% set active_tab = "sites" %}
+  {% include "_workspace_tabs.html" %}
   <div class="workspace-grid">
     <aside class="workspace-rail" id="workspace-rail" aria-label="Site summary">
       <section class="workspace-score">
@@ -39,7 +36,7 @@
       </section>
       <dl class="workspace-stats">
         <div><dt>Pages</dt><dd>{{ site_summary.page_count }}</dd></div>
-        <div><dt>Scans</dt><dd>{{ scan_rows|length }}</dd></div>
+        <div><dt>Scans</dt><dd>{{ site_summary.scan_count }}</dd></div>
         <div><dt>Flags</dt><dd>{{ site_summary.issue_count }}</dd></div>
         <div><dt>Guide</dt><dd>{% if site.brand_voice_text %}1{% else %}0{% endif %}</dd></div>
       </dl>
