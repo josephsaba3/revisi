@@ -15,7 +15,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Red
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from starlette.middleware.sessions import SessionMiddleware
 
 from . import models
@@ -209,17 +209,35 @@ async def scan_sync(
 
 @app.get("/r/{public_token}", response_class=HTMLResponse)
 def result(request: Request, public_token: str, page_id: int | None = None, db: Session = Depends(get_db)) -> HTMLResponse:
-    scan_model = db.query(models.Scan).filter(models.Scan.public_token == public_token).first()
+    started_at = time.perf_counter()
+    scan_model = (
+        db.query(models.Scan)
+        .options(_scan_report_load_options())
+        .filter(models.Scan.public_token == public_token)
+        .first()
+    )
     if not scan_model:
         raise HTTPException(status_code=404, detail="Scan not found")
     if scan_model.scan_mode == "paid_app":
         raise HTTPException(status_code=404, detail="Scan not found")
-    return templates.TemplateResponse(
+    context_started_at = time.perf_counter()
+    context = _result_template_context(scan_model, page_id=page_id)
+    context_elapsed = time.perf_counter() - context_started_at
+    template_started_at = time.perf_counter()
+    response = templates.TemplateResponse(
         request,
         "result.html",
-        _result_template_context(scan_model, page_id=page_id)
-        | {"seo": _seo_context(request, title="Revisi Audit Report", robots="noindex, nofollow")},
+        context | {"seo": _seo_context(request, title="Revisi Audit Report", robots="noindex, nofollow")},
     )
+    template_elapsed = time.perf_counter() - template_started_at
+    logger.info(
+        "result loaded in %.3fs (context %.3fs, template %.3fs, pages=%s)",
+        time.perf_counter() - started_at,
+        context_elapsed,
+        template_elapsed,
+        len(context["pages"]),
+    )
+    return response
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -527,20 +545,26 @@ def app_scan_report(
     db: Session = Depends(get_db),
     current_user: models.User | None = Depends(get_current_user),
 ) -> Response:
+    started_at = time.perf_counter()
     if current_user is None:
         return RedirectResponse("/login", status_code=303)
     site = _owned_site(db, current_user, site_id)
     scan_model = (
         db.query(models.Scan)
+        .options(_scan_report_load_options())
         .filter(models.Scan.id == scan_id, models.Scan.site_id == site.id, models.Scan.user_id == current_user.id)
         .first()
     )
     if scan_model is None:
         raise HTTPException(status_code=404, detail="Scan not found")
-    return templates.TemplateResponse(
+    context_started_at = time.perf_counter()
+    context = _result_template_context(scan_model, page_id=page_id)
+    context_elapsed = time.perf_counter() - context_started_at
+    template_started_at = time.perf_counter()
+    response = templates.TemplateResponse(
         request,
         "result.html",
-        _result_template_context(scan_model, page_id=page_id)
+        context
         | {
             "app_report": True,
             "report_path": f"/app/sites/{site.id}/scans/{scan_model.id}",
@@ -548,6 +572,15 @@ def app_scan_report(
             "seo": _seo_context(request, title="Revisi App Audit Report", robots="noindex, nofollow"),
         },
     )
+    template_elapsed = time.perf_counter() - template_started_at
+    logger.info(
+        "app_scan_report loaded in %.3fs (context %.3fs, template %.3fs, pages=%s)",
+        time.perf_counter() - started_at,
+        context_elapsed,
+        template_elapsed,
+        len(context["pages"]),
+    )
+    return response
 
 
 def _public_site_url(request: Request) -> str:
@@ -1857,6 +1890,13 @@ def _save_scan_pages(
     db.commit()
     db.refresh(scan_model)
     return scan_model
+
+
+def _scan_report_load_options() -> tuple:
+    return (
+        selectinload(models.Scan.page_results).selectinload(models.PageResult.issues),
+        selectinload(models.Scan.page_results).selectinload(models.PageResult.rewrites),
+    )
 
 
 def _result_template_context(scan_model: models.Scan, page_id: int | None = None) -> dict:
