@@ -308,6 +308,10 @@ def test_app_site_workspace_lists_owned_sites(db_session) -> None:
     assert "Your" in response.text
     assert "sites" in response.text
     assert "Add site" in response.text
+    assert 'data-add-site-open' in response.text
+    assert 'id="add-site-modal"' in response.text
+    assert 'data-workspace-rail-toggle' in response.text
+    assert 'id="workspace-rail"' in response.text
     assert "Import sitemap" not in response.text
     assert "Client Site" in response.text
     assert "First scan pending" in response.text
@@ -356,6 +360,7 @@ def test_create_site_rejects_non_markdown_guide_upload(db_session) -> None:
         app.dependency_overrides.clear()
 
     assert response.status_code == 400
+    assert "data-add-site-auto-open" in response.text
     assert "must be Markdown .md files" in response.text
     assert db_session.query(main.models.Site).filter(main.models.Site.name == "Unsafe Site").count() == 0
 

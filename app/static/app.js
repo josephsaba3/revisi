@@ -148,6 +148,51 @@
     });
   });
 
+  document.querySelectorAll("[data-workspace-rail-toggle]").forEach((toggle) => {
+    const workspace = toggle.closest(".workspace-shell");
+    const rail = document.getElementById(toggle.getAttribute("aria-controls") || "");
+    if (!workspace || !rail) return;
+
+    const saved = window.localStorage.getItem("revisi-workspace-rail-collapsed") === "true";
+
+    function setRailCollapsed(isCollapsed) {
+      workspace.classList.toggle("is-rail-collapsed", isCollapsed);
+      toggle.setAttribute("aria-pressed", String(isCollapsed));
+      toggle.setAttribute("aria-label", isCollapsed ? "Expand workspace sidebar" : "Collapse workspace sidebar");
+      rail.setAttribute("aria-hidden", String(isCollapsed));
+      window.localStorage.setItem("revisi-workspace-rail-collapsed", String(isCollapsed));
+    }
+
+    setRailCollapsed(saved);
+
+    toggle.addEventListener("click", () => {
+      setRailCollapsed(!workspace.classList.contains("is-rail-collapsed"));
+    });
+  });
+
+  const addSiteDialog = document.getElementById("add-site-modal");
+  if (addSiteDialog) {
+    function openAddSiteDialog() {
+      if (!addSiteDialog.open) addSiteDialog.showModal();
+    }
+
+    document.querySelectorAll("[data-add-site-open]").forEach((button) => {
+      button.addEventListener("click", openAddSiteDialog);
+    });
+
+    addSiteDialog.querySelectorAll("[data-add-site-close]").forEach((button) => {
+      button.addEventListener("click", () => addSiteDialog.close());
+    });
+
+    addSiteDialog.addEventListener("click", (event) => {
+      if (event.target === addSiteDialog) addSiteDialog.close();
+    });
+
+    if (addSiteDialog.hasAttribute("data-add-site-auto-open")) {
+      openAddSiteDialog();
+    }
+  }
+
   const form = document.getElementById("scan-form");
   const urlInput = document.getElementById("url-input");
   const urlBox = document.getElementById("url-box");

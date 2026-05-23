@@ -6,9 +6,14 @@
 {% block content %}
 <div class="workspace-shell">
   <header class="workspace-topbar">
-    <a class="workspace-brand" href="/app" aria-label="Revisi app home">
-      <img src="{{ url_for('static', path='/revisi-wordmark.svg') }}" alt="Revisi" width="103" height="40">
-    </a>
+    <div class="workspace-brand">
+      <a href="/app" aria-label="Revisi app home">
+        <img src="{{ url_for('static', path='/revisi-wordmark.svg') }}" alt="Revisi" width="103" height="40">
+      </a>
+      <button class="workspace-rail-toggle" type="button" data-workspace-rail-toggle aria-controls="workspace-rail" aria-pressed="false" aria-label="Collapse workspace sidebar">
+        <i aria-hidden="true"></i>
+      </button>
+    </div>
     <div class="workspace-context">
       <span>Workspace</span>
       <strong>{{ current_user.email }}</strong>
@@ -24,7 +29,7 @@
     <span class="workspace-tab active">Sites <b>{{ workspace_summary.site_count }}</b></span>
   </nav>
   <div class="workspace-grid">
-    <aside class="workspace-rail" aria-label="Workspace summary">
+    <aside class="workspace-rail" id="workspace-rail" aria-label="Workspace summary">
       <section class="workspace-score">
         <p>Workspace voice</p>
         <strong>{% if workspace_summary.score is not none %}{{ workspace_summary.score }}{% else %}--{% endif %}</strong>
@@ -46,11 +51,10 @@
           <h1>Your <span>sites</span>.</h1>
           <p>{{ workspace_summary.site_count }} domain{% if workspace_summary.site_count != 1 %}s{% endif %} under audit. Scores and flags reflect the latest saved scan for each site.</p>
         </div>
-        <a class="workspace-add" href="#add-site"><span>+</span> Add site</a>
+        <button class="workspace-add" type="button" data-add-site-open aria-haspopup="dialog"><span>+</span> Add site</button>
       </header>
 
       {% if flash %}<p class="app-flash workspace-message">{{ flash }}</p>{% endif %}
-      {% if error %}<p class="auth-error workspace-message">{{ error }}</p>{% endif %}
 
       <section class="workspace-table" aria-label="Your sites">
         <div class="workspace-thead" aria-hidden="true">
@@ -97,21 +101,27 @@
         {% endif %}
       </section>
 
-      <section class="workspace-add-panel" id="add-site">
-        <header>
-          <p class="app-kicker">Add site</p>
-          <h2>Put another domain on the desk.</h2>
-        </header>
-        <form class="app-form site-create" method="post" action="/app/sites" enctype="multipart/form-data">
-          <label><span>Name</span><input name="name" value="{{ site_values.name if site_values else '' }}" placeholder="Client or site name"></label>
-          <label><span>URL</span><input name="url" value="{{ site_values.url if site_values else '' }}" placeholder="example.com" required></label>
-          <label class="workspace-guide"><span>Brand voice guide</span><textarea name="brand_voice" rows="6" placeholder="Paste the voice guide or the notes the audit should obey.">{{ site_values.brand_voice if site_values else '' }}</textarea></label>
-          <label><span>Upload Markdown guide</span><input name="brand_voice_file" type="file" accept=".md,text/markdown"></label>
-          <p class="field-note">Optional. `.md` files only. Uploaded Markdown replaces pasted guide text for this site.</p>
-          <button class="app-button primary" type="submit">Create site</button>
-        </form>
-      </section>
     </main>
   </div>
+  <dialog class="workspace-add-modal" id="add-site-modal" aria-labelledby="add-site-title" {% if error %}data-add-site-auto-open{% endif %}>
+    <div class="workspace-add-dialog">
+      <header>
+        <div>
+          <p class="app-kicker">Add site</p>
+          <h2 id="add-site-title">Put another domain on the desk.</h2>
+        </div>
+        <button class="workspace-modal-close" type="button" data-add-site-close aria-label="Close add site dialog">&times;</button>
+      </header>
+      {% if error %}<p class="auth-error">{{ error }}</p>{% endif %}
+      <form class="app-form site-create" method="post" action="/app/sites" enctype="multipart/form-data">
+        <label><span>Name</span><input name="name" value="{{ site_values.name if site_values else '' }}" placeholder="Client or site name"></label>
+        <label><span>URL</span><input name="url" value="{{ site_values.url if site_values else '' }}" placeholder="example.com" required></label>
+        <label class="workspace-guide"><span>Brand voice guide</span><textarea name="brand_voice" rows="6" placeholder="Paste the voice guide or the notes the audit should obey.">{{ site_values.brand_voice if site_values else '' }}</textarea></label>
+        <label><span>Upload Markdown guide</span><input name="brand_voice_file" type="file" accept=".md,text/markdown"></label>
+        <p class="field-note">Optional. `.md` files only. Uploaded Markdown replaces pasted guide text for this site.</p>
+        <button class="app-button primary" type="submit">Create site</button>
+      </form>
+    </div>
+  </dialog>
 </div>
 {% endblock %}
