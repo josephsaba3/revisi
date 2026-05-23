@@ -899,6 +899,31 @@ button:disabled {
   width: max-content;
 }
 
+.app-scan-loader {
+  width: min(640px, calc(100% - 40px));
+  border: 1px solid #0a0a0a;
+  overflow: visible;
+  padding: 0;
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  background: transparent;
+  color: #0a0a0a;
+}
+
+.app-scan-loader::backdrop {
+  background: rgb(42 42 42 / 72%);
+}
+
+.app-scan-loader .loader-card {
+  width: 100%;
+  border: 0;
+}
+
+.app-scan-loader .progress {
+  margin-top: 18px;
+}
+
 .site-detail-main {
   min-width: 0;
   overflow: auto;
@@ -1294,6 +1319,87 @@ button:disabled {
   padding: 28px;
 }
 
+.voice-main {
+  min-height: 0;
+}
+
+.voice-head {
+  min-height: 254px;
+  border-bottom: 1px solid var(--workspace-line);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 36px;
+  padding: 48px 60px 38px;
+}
+
+.voice-head h1 {
+  color: #0a0a0a;
+  font-size: 68px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 0.92;
+}
+
+.voice-head h1 span {
+  position: relative;
+  display: inline-block;
+}
+
+.voice-head h1 span::after {
+  height: 13px;
+  position: absolute;
+  right: 0;
+  bottom: -0.04em;
+  left: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 13' preserveAspectRatio='none'><path d='M 0 8 Q 7.5 2 15 8 T 30 8 T 45 8 T 60 8' fill='none' stroke='%23FF2D6F' stroke-width='2.6' stroke-linecap='round'/></svg>");
+  background-repeat: repeat-x;
+  background-size: 60px 13px;
+  content: "";
+}
+
+.voice-head p:not(.app-kicker) {
+  max-width: 62ch;
+  margin-top: 16px;
+  color: var(--workspace-muted-2);
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.voice-editor-state {
+  min-height: 520px;
+  display: grid;
+  align-content: center;
+  justify-content: center;
+  padding: 48px 60px;
+}
+
+.voice-editor-state > p {
+  color: var(--workspace-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.voice-editor-state .voice-editor-label {
+  margin-bottom: 18px;
+  color: var(--workspace-muted);
+}
+
+.voice-guide-preview {
+  width: min(760px, calc(100vw - 480px));
+  max-height: 360px;
+  border: 1px solid var(--workspace-line);
+  overflow: auto;
+  padding: 24px;
+  background: var(--workspace-paper-2);
+  color: #1a1a1a;
+  font-size: 16px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
 .app-bar {
   min-height: 72px;
   border-bottom: 1px solid #0a0a0a;
@@ -1659,6 +1765,10 @@ button:disabled {
     padding: 20px;
   }
 
+  .app-scan-loader {
+    width: calc(100% - 24px);
+  }
+
   .site-detail-head {
     grid-template-columns: 1fr;
     gap: 28px;
@@ -1775,6 +1885,30 @@ button:disabled {
 
   .site-settings-panel .guide-editor {
     padding: 20px;
+  }
+
+  .voice-head {
+    min-height: 0;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 36px 20px 30px;
+  }
+
+  .voice-head h1 {
+    font-size: 48px;
+  }
+
+  .voice-head p:not(.app-kicker) {
+    font-size: 16px;
+  }
+
+  .voice-editor-state {
+    min-height: 360px;
+    padding: 36px 20px;
+  }
+
+  .voice-guide-preview {
+    width: 100%;
   }
 
   .app-layout {

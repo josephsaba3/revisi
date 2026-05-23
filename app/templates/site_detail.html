@@ -27,6 +27,7 @@
   </header>
   <nav class="workspace-tabs" aria-label="Workspace">
     <a class="workspace-tab active" href="/app">Sites <b>{{ workspace_summary.site_count }}</b></a>
+    <a class="workspace-tab" href="/app/sites/{{ site.id }}/voice">Voice</a>
   </nav>
   <div class="workspace-grid">
     <aside class="workspace-rail" id="workspace-rail" aria-label="Site summary">
@@ -70,8 +71,8 @@
             <p>Site voice score</p>
           </div>
           <div class="site-actions">
-            <button class="app-button" type="button" data-site-guide-open aria-haspopup="dialog">Settings</button>
-            <form method="post" action="/app/sites/{{ site.id }}/scan">
+            <a class="app-button" href="/app/sites/{{ site.id }}/voice">Voice</a>
+            <form method="post" action="/app/sites/{{ site.id }}/scan" data-app-scan-form>
               <input type="hidden" name="depth" value="site">
               <button class="app-button primary" type="submit">{% if scan_rows %}Re-run scan &rarr;{% else %}Run scan &rarr;{% endif %}</button>
             </form>
@@ -132,26 +133,29 @@
         </div>
       </section>
 
-      <dialog class="site-guide-modal" id="site-guide-modal" aria-labelledby="site-guide-title">
-        <div class="workspace-add-dialog">
-          <header>
-            <div>
-              <p class="app-kicker">Settings</p>
-              <h2 id="site-guide-title">Brand voice guide.</h2>
-            </div>
-            <button class="workspace-modal-close" type="button" data-site-guide-close aria-label="Close brand voice guide dialog">&times;</button>
-          </header>
-          <form class="app-form guide-editor" method="post" action="/app/sites/{{ site.id }}/guide">
-            <h2>Brand voice guide</h2>
-            <label>
-              <span>Used on future paid scans</span>
-              <textarea name="brand_voice" rows="10" placeholder="Paste voice rules, examples, anti-references, and banned phrases.">{{ site.brand_voice_text or '' }}</textarea>
-            </label>
-            <button class="app-button" type="submit">Save guide</button>
-          </form>
-        </div>
-      </dialog>
     </main>
   </div>
+  <dialog class="app-scan-loader" id="app-scan-loader" aria-labelledby="app-scan-loader-title">
+    <div class="loader-card">
+      <p class="pre">Site scan in progress</p>
+      <h2 id="app-scan-loader-title">Reading the site like an editor.</h2>
+      <div class="log" data-app-scan-log>
+        <div class="row on"><span class="num">01</span><span class="t">Preparing crawl</span></div>
+        <div class="row"><span class="num">02</span><span class="t">Fetching pages</span></div>
+        <div class="row"><span class="num">03</span><span class="t">Extracting visible copy</span></div>
+        <div class="row"><span class="num">04</span><span class="t">Checking against the voice guide</span></div>
+        <div class="row"><span class="num">05</span><span class="t">Scoring and saving report</span></div>
+      </div>
+      <div class="progress"><div class="bar" data-app-scan-progress></div></div>
+      <div class="loader-error app-scan-error" data-app-scan-error hidden>
+        <strong>Scan stopped</strong>
+        <p data-app-scan-error-text></p>
+        <div class="loader-error-actions">
+          <button type="button" data-app-scan-retry>Try again</button>
+          <button type="button" data-app-scan-close>Back to site</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
 </div>
 {% endblock %}

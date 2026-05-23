@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Voice - {{ site.name }} - Revisi{% endblock %}
+{% block main_class %}revisi-app-root{% endblock %}
+
+{% block content %}
+<div class="workspace-shell">
+  <header class="workspace-topbar">
+    <div class="workspace-brand">
+      <a href="/app" aria-label="Revisi app home">
+        <img src="{{ url_for('static', path='/revisi-wordmark.svg') }}" alt="Revisi" width="103" height="40">
+      </a>
+      <button class="workspace-rail-toggle" type="button" data-workspace-rail-toggle aria-controls="workspace-rail" aria-pressed="false" aria-label="Collapse workspace sidebar">
+        <i aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="workspace-context">
+      <span>Workspace</span>
+      <strong>{{ current_user.email }}</strong>
+      <i></i>
+      <span>{{ site.name }}</span>
+      <span>{% if site.brand_voice_text %}Voice guide saved{% else %}Voice guide empty{% endif %}</span>
+    </div>
+    <form class="workspace-logout" method="post" action="/logout">
+      <button type="submit">Log out</button>
+    </form>
+  </header>
+  <nav class="workspace-tabs" aria-label="Workspace">
+    <a class="workspace-tab" href="/app/sites/{{ site.id }}">Sites <b>{{ workspace_summary.site_count }}</b></a>
+    <span class="workspace-tab active">Voice</span>
+  </nav>
+  <div class="workspace-grid">
+    <aside class="workspace-rail" id="workspace-rail" aria-label="Site voice summary">
+      <section class="workspace-score">
+        <p>Site voice</p>
+        <strong>{% if site_summary.score is not none %}{{ site_summary.score }}{% else %}--{% endif %}</strong>
+        <span>/ 100</span>
+      </section>
+      <dl class="workspace-stats">
+        <div><dt>Pages</dt><dd>{{ site_summary.page_count }}</dd></div>
+        <div><dt>Scans</dt><dd>{{ scan_rows|length }}</dd></div>
+        <div><dt>Flags</dt><dd>{{ site_summary.issue_count }}</dd></div>
+        <div><dt>Guide</dt><dd>{% if site.brand_voice_text %}1{% else %}0{% endif %}</dd></div>
+      </dl>
+      <section class="workspace-note">
+        <p>Voice guides are per site. This reference is only used when scanning {{ site.name }}.</p>
+      </section>
+    </aside>
+    <main class="site-detail-main voice-main">
+      <header class="voice-head">
+        <div>
+          <a class="site-back" href="/app/sites/{{ site.id }}">&larr; Site pages</a>
+          <h1>Your <span>voice</span>.</h1>
+          <p>Per-site brand voice profiles. Each site is scored against its own reference voice, paste copy that sounds the way you want, or upload a Markdown guide.</p>
+        </div>
+        <button class="app-button primary" type="button" data-site-guide-open aria-haspopup="dialog">Edit reference corpus</button>
+      </header>
+
+      {% if flash %}<p class="app-flash workspace-message">{{ flash }}</p>{% endif %}
+      {% if error %}<p class="auth-error workspace-message">{{ error }}</p>{% endif %}
+
+      <section class="voice-editor-state">
+        {% if site.brand_voice_text %}
+          <p class="voice-editor-label">Voice guide for {{ site.name }}</p>
+          <div class="voice-guide-preview">{{ site.brand_voice_text }}</div>
+        {% else %}
+          <p>Voice editor · open upload to configure</p>
+        {% endif %}
+      </section>
+
+      <dialog class="site-guide-modal" id="site-guide-modal" aria-labelledby="site-guide-title" {% if error %}data-site-guide-auto-open{% endif %}>
+        <div class="workspace-add-dialog">
+          <header>
+            <div>
+              <p class="app-kicker">Voice</p>
+              <h2 id="site-guide-title">Brand voice guide.</h2>
+            </div>
+            <button class="workspace-modal-close" type="button" data-site-guide-close aria-label="Close brand voice guide dialog">&times;</button>
+          </header>
+          <form class="app-form guide-editor" method="post" action="/app/sites/{{ site.id }}/guide" enctype="multipart/form-data">
+            <h2>Brand voice guide</h2>
+            <label>
+              <span>Reference copy</span>
+              <textarea name="brand_voice" rows="12" placeholder="Paste voice rules, examples, anti-references, and banned phrases.">{{ guide_values.brand_voice if guide_values.brand_voice is defined else (site.brand_voice_text or '') }}</textarea>
+            </label>
+            <label>
+              <span>Upload Markdown guide</span>
+              <input name="brand_voice_file" type="file" accept=".md,text/markdown">
+            </label>
+            <p class="field-note">Optional. `.md` files only. Uploaded Markdown replaces pasted guide text for this site.</p>
+            <button class="app-button primary" type="submit">Save voice guide</button>
+          </form>
+        </div>
+      </dialog>
+    </main>
+  </div>
+</div>
+{% endblock %}

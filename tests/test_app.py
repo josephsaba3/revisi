@@ -276,6 +276,34 @@ def test_scan_post_returns_job_id(monkeypatch) -> None:
         _scan_jobs.clear()
 
 
+def test_app_site_scan_returns_job_id(monkeypatch, db_session) -> None:
+    async def fake_run_app_scan_job(*_args, **_kwargs):
+        return None
+
+    user = main.models.User(id="00000000-0000-4000-8000-000000000020", email="scanjob@example.com")
+    site = main.models.Site(user=user, name="Async Site", base_url="https://async.example", domain="async.example")
+    db_session.add_all([user, site])
+    db_session.commit()
+    monkeypatch.setattr(main, "_run_app_scan_job", fake_run_app_scan_job)
+    _scan_jobs.clear()
+    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[main.get_current_user] = lambda: SimpleNamespace(id=user.id, email=user.email)
+    client = TestClient(app)
+
+    try:
+        response = client.post(
+            f"/app/sites/{site.id}/scan",
+            data={"depth": "site"},
+            headers={"Accept": "application/json"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 202
+    assert response.json()["job_id"] in _scan_jobs
+    _scan_jobs.clear()
+
+
 def test_app_routes_require_login() -> None:
     client = TestClient(app)
     response = client.get("/app", follow_redirects=False)
@@ -312,6 +340,8 @@ def test_app_site_workspace_lists_owned_sites(db_session) -> None:
     assert 'id="add-site-modal"' in response.text
     assert 'data-workspace-rail-toggle' in response.text
     assert 'id="workspace-rail"' in response.text
+    assert 'data-app-scan-form' in response.text
+    assert 'id="app-scan-loader"' in response.text
     assert "Import sitemap" not in response.text
     assert "Client Site" in response.text
     assert "First scan pending" in response.text
@@ -395,9 +425,66 @@ def test_app_site_detail_renders_latest_pages_table(db_session) -> None:
     assert "Brand Fit" in response.text
     assert "92" in response.text
     assert "Open &rarr;" in response.text
+    assert "/voice" in response.text
+    assert "data-site-guide-open" not in response.text
+    assert 'id="site-guide-modal"' not in response.text
+    assert 'data-app-scan-form' in response.text
+    assert 'id="app-scan-loader"' in response.text
+
+
+def test_app_site_voice_page_renders_per_site_guide_modal(db_session) -> None:
+    user = main.models.User(id="00000000-0000-4000-8000-000000000013", email="voice@example.com")
+    site = main.models.Site(
+        user=user,
+        name="Voice Site",
+        base_url="https://voice.example",
+        domain="voice.example",
+        brand_voice_text="Plainspoken and specific.",
+    )
+    db_session.add_all([user, site])
+    db_session.commit()
+    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[main.get_current_user] = lambda: SimpleNamespace(id=user.id, email=user.email)
+    client = TestClient(app)
+
+    try:
+        response = client.get(f"/app/sites/{site.id}/voice")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert "Your" in response.text
+    assert "voice" in response.text
+    assert "Voice Site" in response.text
+    assert "Plainspoken and specific." in response.text
     assert "data-site-guide-open" in response.text
     assert 'id="site-guide-modal"' in response.text
-    assert "data-site-guide-close" in response.text
+    assert "brand_voice_file" in response.text
+
+
+def test_update_site_guide_accepts_markdown_upload(db_session) -> None:
+    user = main.models.User(id="00000000-0000-4000-8000-000000000014", email="uploadvoice@example.com")
+    site = main.models.Site(user=user, name="Upload Voice", base_url="https://upload.example", domain="upload.example")
+    db_session.add_all([user, site])
+    db_session.commit()
+    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[main.get_current_user] = lambda: SimpleNamespace(id=user.id, email=user.email)
+    client = TestClient(app)
+
+    try:
+        response = client.post(
+            f"/app/sites/{site.id}/guide",
+            data={"brand_voice": "Pasted fallback"},
+            files={"brand_voice_file": ("voice.md", b"# Voice\nPrecise and practical.", "text/markdown")},
+            follow_redirects=False,
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    db_session.refresh(site)
+    assert response.status_code == 303
+    assert response.headers["location"].startswith(f"/app/sites/{site.id}/voice")
+    assert site.brand_voice_text == "# Voice\nPrecise and practical."
 
 
 def test_create_site_accepts_markdown_guide_upload(db_session) -> None:

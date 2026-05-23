@@ -210,6 +210,111 @@
     siteGuideDialog.addEventListener("click", (event) => {
       if (event.target === siteGuideDialog) siteGuideDialog.close();
     });
+
+    if (siteGuideDialog.hasAttribute("data-site-guide-auto-open")) {
+      openSiteGuideDialog();
+    }
+  }
+
+  const appScanLoader = document.getElementById("app-scan-loader");
+  if (appScanLoader) {
+    const rows = Array.from(appScanLoader.querySelectorAll("[data-app-scan-log] .row"));
+    const bar = appScanLoader.querySelector("[data-app-scan-progress]");
+    const errorBox = appScanLoader.querySelector("[data-app-scan-error]");
+    const errorText = appScanLoader.querySelector("[data-app-scan-error-text]");
+    const retryButton = appScanLoader.querySelector("[data-app-scan-retry]");
+    const closeButton = appScanLoader.querySelector("[data-app-scan-close]");
+    let activeAppScanForm = null;
+
+    function renderAppScanStep(stepIndex, status = "running") {
+      rows.forEach((row, index) => {
+        row.classList.toggle("done", index < stepIndex);
+        row.classList.toggle("on", index === stepIndex && status !== "error");
+        row.classList.toggle("error", index === stepIndex && status === "error");
+      });
+      if (bar) bar.style.width = `${Math.min(96, ((stepIndex + 1) / rows.length) * 100)}%`;
+    }
+
+    function renderAppScanProgress(data) {
+      const steps = data.steps || [];
+      const activeIndex = Math.max(0, steps.findIndex((step) => step.status === "running" || step.status === "error"));
+      const completed = data.completed_steps || steps.filter((step) => step.status === "done").length;
+      const fallbackIndex = Math.min(rows.length - 1, Math.max(0, completed));
+      renderAppScanStep(activeIndex >= 0 ? activeIndex : fallbackIndex, data.status);
+      if (bar && steps.length) {
+        const percentage = data.status === "done" ? 100 : Math.min(96, Math.round((completed / steps.length) * 100));
+        bar.style.width = `${percentage}%`;
+      }
+    }
+
+    function showAppScanError(message) {
+      if (errorText) errorText.textContent = message;
+      if (errorBox) errorBox.hidden = false;
+      activeAppScanForm?.querySelectorAll("button").forEach((button) => {
+        button.disabled = false;
+      });
+    }
+
+    function clearAppScanError() {
+      if (errorBox) errorBox.hidden = true;
+      if (errorText) errorText.textContent = "";
+    }
+
+    async function pollAppScanProgress(jobId) {
+      try {
+        const response = await fetch(`/scan/progress/${encodeURIComponent(jobId)}`, {
+          headers: { Accept: "application/json" },
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Could not read scan progress.");
+        renderAppScanProgress(data);
+        if (data.status === "done" && data.report_url) {
+          window.location.assign(data.report_url);
+          return;
+        }
+        if (data.status === "error") {
+          showAppScanError(data.error || "The scan failed.");
+          return;
+        }
+        window.setTimeout(() => pollAppScanProgress(jobId), 900);
+      } catch (error) {
+        showAppScanError(error.message || "Could not read scan progress.");
+      }
+    }
+
+    document.querySelectorAll("[data-app-scan-form]").forEach((scanForm) => {
+      scanForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        activeAppScanForm = scanForm;
+        renderAppScanStep(0);
+        clearAppScanError();
+        if (!appScanLoader.open) appScanLoader.showModal();
+        scanForm.querySelectorAll("button").forEach((button) => {
+          button.disabled = true;
+        });
+        try {
+          const response = await fetch(scanForm.action, {
+            method: "POST",
+            body: new FormData(scanForm),
+            headers: { Accept: "application/json" },
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || "The scan could not be started.");
+          if (!data.job_id) throw new Error("The scan did not return a job id.");
+          pollAppScanProgress(data.job_id);
+        } catch (error) {
+          showAppScanError(error.message || "The scan failed before it could start.");
+        }
+      });
+    });
+
+    retryButton?.addEventListener("click", () => activeAppScanForm?.requestSubmit());
+    closeButton?.addEventListener("click", () => {
+      appScanLoader.close();
+      activeAppScanForm?.querySelectorAll("button").forEach((button) => {
+        button.disabled = false;
+      });
+    });
   }
 
   const form = document.getElementById("scan-form");

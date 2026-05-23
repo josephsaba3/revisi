@@ -88,7 +88,7 @@
                 {% if row.score is not none %}{{ row.score }}<small>/100</small>{% else %}--{% endif %}
               </strong>
               <div class="workspace-row-actions">
-                <form method="post" action="/app/sites/{{ row.site.id }}/scan">
+                <form method="post" action="/app/sites/{{ row.site.id }}/scan" data-app-scan-form>
                   <input type="hidden" name="depth" value="site">
                   <button type="submit">{% if row.latest_scan %}Re-scan{% else %}Run scan{% endif %}</button>
                 </form>
@@ -121,6 +121,28 @@
         <p class="field-note">Optional. `.md` files only. Uploaded Markdown replaces pasted guide text for this site.</p>
         <button class="app-button primary" type="submit">Create site</button>
       </form>
+    </div>
+  </dialog>
+  <dialog class="app-scan-loader" id="app-scan-loader" aria-labelledby="app-scan-loader-title">
+    <div class="loader-card">
+      <p class="pre">Site scan in progress</p>
+      <h2 id="app-scan-loader-title">Reading the site like an editor.</h2>
+      <div class="log" data-app-scan-log>
+        <div class="row on"><span class="num">01</span><span class="t">Preparing crawl</span></div>
+        <div class="row"><span class="num">02</span><span class="t">Fetching pages</span></div>
+        <div class="row"><span class="num">03</span><span class="t">Extracting visible copy</span></div>
+        <div class="row"><span class="num">04</span><span class="t">Checking against the voice guide</span></div>
+        <div class="row"><span class="num">05</span><span class="t">Scoring and saving report</span></div>
+      </div>
+      <div class="progress"><div class="bar" data-app-scan-progress></div></div>
+      <div class="loader-error app-scan-error" data-app-scan-error hidden>
+        <strong>Scan stopped</strong>
+        <p data-app-scan-error-text></p>
+        <div class="loader-error-actions">
+          <button type="button" data-app-scan-retry>Try again</button>
+          <button type="button" data-app-scan-close>Back to sites</button>
+        </div>
+      </div>
     </div>
   </dialog>
 </div>

@@ -442,25 +442,51 @@ def site_detail(
     return _site_response(request, current_user, site)
 
 
-@app.post("/app/sites/{site_id}/guide")
-def update_site_guide(
+@app.get("/app/sites/{site_id}/voice", response_class=HTMLResponse)
+def site_voice(
     request: Request,
     site_id: int,
-    brand_voice: str = Form(""),
     db: Session = Depends(get_db),
     current_user: models.User | None = Depends(get_current_user),
 ) -> Response:
     if current_user is None:
         return RedirectResponse("/login", status_code=303)
     site = _owned_site(db, current_user, site_id)
-    site.brand_voice_text = brand_voice.strip() or None
+    return _site_voice_response(request, current_user, site)
+
+
+@app.post("/app/sites/{site_id}/guide")
+async def update_site_guide(
+    request: Request,
+    site_id: int,
+    brand_voice: str = Form(""),
+    brand_voice_file: UploadFile | None = File(None),
+    db: Session = Depends(get_db),
+    current_user: models.User | None = Depends(get_current_user),
+) -> Response:
+    if current_user is None:
+        return RedirectResponse("/login", status_code=303)
+    site = _owned_site(db, current_user, site_id)
+    try:
+        uploaded_guide = await _read_markdown_guide_file(brand_voice_file)
+    except ValueError as exc:
+        return _site_voice_response(
+            request,
+            current_user,
+            site,
+            error=str(exc),
+            guide_values={"brand_voice": brand_voice},
+            status_code=400,
+        )
+    site.brand_voice_text = (uploaded_guide or brand_voice).strip() or None
     db.commit()
-    return _redirect_with_flash(f"/app/sites/{site.id}", "Brand voice guide updated.")
+    return _redirect_with_flash(f"/app/sites/{site.id}/voice", "Brand voice guide updated.")
 
 
 @app.post("/app/sites/{site_id}/scan")
 async def scan_site(
     request: Request,
+    background_tasks: BackgroundTasks,
     site_id: int,
     depth: str = Form("site"),
     db: Session = Depends(get_db),
@@ -469,20 +495,11 @@ async def scan_site(
     if current_user is None:
         return RedirectResponse("/login", status_code=303)
     site = _owned_site(db, current_user, site_id)
-    try:
-        scan_model = await _perform_scan(
-            site.base_url,
-            depth,
-            site.brand_voice_text or "",
-            "",
-            db,
-            user=current_user,
-            site=site,
-            scan_mode="paid_app",
-        )
-    except (ValueError, FetchError, RuntimeError) as exc:
-        return _site_response(request, current_user, site, error=str(exc), status_code=400)
-    return RedirectResponse(f"/app/sites/{site.id}/scans/{scan_model.id}", status_code=303)
+    job_id = _create_scan_job()
+    background_tasks.add_task(_run_app_scan_job, job_id, current_user.id, site.id, depth)
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({"job_id": job_id}, status_code=202)
+    return _redirect_with_flash(f"/app/sites/{site.id}", "Scan started. This can take a few minutes on larger sites.")
 
 
 @app.get("/app/sites/{site_id}/scans/{scan_id}", response_class=HTMLResponse)
@@ -601,6 +618,35 @@ def _site_response(
             page_rows=_site_page_rows(site, latest_scan_model),
             metric_rows=_site_metric_rows(latest_scan_model),
             error=error,
+        ),
+        status_code=status_code,
+    )
+
+
+def _site_voice_response(
+    request: Request,
+    current_user: models.User,
+    site: models.Site,
+    *,
+    error: str | None = None,
+    guide_values: dict | None = None,
+    status_code: int = 200,
+) -> HTMLResponse:
+    scans = list(site.scans or [])
+    scan_rows = _scan_history_rows(scans)
+    site_summary = _site_summary_rows([site])[0]
+    return templates.TemplateResponse(
+        request,
+        "site_voice.html",
+        _app_context(
+            request,
+            current_user,
+            site=site,
+            scan_rows=scan_rows,
+            site_summary=site_summary,
+            workspace_summary=_workspace_summary([site_summary]),
+            error=error,
+            guide_values=guide_values or {},
         ),
         status_code=status_code,
     )
@@ -961,6 +1007,36 @@ async def _run_scan_job(
         db.close()
 
 
+async def _run_app_scan_job(job_id: str, user_id: str, site_id: int, depth: str) -> None:
+    _mark_job_running(job_id)
+    db = SessionLocal()
+    try:
+        site = db.query(models.Site).filter(models.Site.id == site_id, models.Site.user_id == user_id).first()
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        if site is None or user is None:
+            _fail_job(job_id, "Site not found.")
+            return
+        scan_model = await _perform_scan(
+            site.base_url,
+            depth,
+            site.brand_voice_text or "",
+            "",
+            db,
+            job_id,
+            user=user,
+            site=site,
+            scan_mode="paid_app",
+        )
+        _complete_job(job_id, f"/app/sites/{site.id}/scans/{scan_model.id}")
+    except (ValueError, FetchError, RuntimeError) as exc:
+        _fail_job(job_id, str(exc))
+    except Exception:
+        logger.exception("App scan job failed unexpectedly")
+        _fail_job(job_id, "The scan failed unexpectedly. Check the deployment logs for the Python traceback.")
+    finally:
+        db.close()
+
+
 def _create_scan_job() -> str:
     _prune_scan_jobs()
     job_id = uuid4().hex
@@ -1104,10 +1180,11 @@ def _normalize_scan_depth(depth: str) -> str:
 
 
 def _scan_page_limit(depth: str) -> int:
+    settings = get_settings()
     if depth == "deep":
-        return 25
+        return max(settings.scan_deep_page_limit, 1)
     if depth == "site":
-        return 10
+        return max(settings.scan_site_page_limit, 1)
     return 1
 
 

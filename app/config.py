@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     firecrawl_max_concurrency: int = 3
     firecrawl_min_extracted_lines: int = 6
     firecrawl_min_extracted_words: int = 80
+    scan_site_page_limit: int = 25
+    scan_deep_page_limit: int = 75
     scan_rate_limit_count: int = 5
     scan_rate_limit_window_seconds: int = 600
     scan_rate_limit_enabled: bool = True
