@@ -6381,7 +6381,8 @@ button:disabled {
 .sample .lbl {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 24px;
   margin-bottom: 22px;
   color: var(--muted);
   font-family: var(--mono);
@@ -6391,12 +6392,31 @@ button:disabled {
 }
 
 .sample .score {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
   color: var(--ink);
-  font-weight: 600;
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 0.82;
+  text-transform: none;
 }
 
 .sample .score.flag {
   color: var(--accent);
+}
+
+.sample .score .n {
+  font-size: clamp(58px, 5.5vw, 88px);
+  font-feature-settings: "lnum", "tnum";
+}
+
+.sample .score .of {
+  margin-top: 9px;
+  color: currentColor;
+  font-size: clamp(18px, 1.7vw, 26px);
+  font-style: italic;
 }
 
 .sample .body {

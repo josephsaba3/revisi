@@ -21,7 +21,7 @@
         <a href="#product">Product</a>
         <a href="#metrics">Metrics</a>
         <a href="#pricing">Pricing</a>
-        <a href="#how" class="muted">How it works</a>      
+        <a href="#how" class="muted">How it works</a>
       </nav>
       <div class="cta">
         <a class="mk-btn ghost" href="/login">Sign in</a>
@@ -40,20 +40,21 @@
       <span class="sq">copy editor.</span>
     </h1>
     <p class="sub">
-      Revisi reads every page on your site and grades it against your 
-      brand voice, sentence by sentence, with a score and a flag on each line 
-      if it drifts off-tone. 
+      Revisi reads every page on your site and grades it against your
+      brand voice, sentence by sentence, with a score and a flag on each line
+      if it drifts off-tone.
     </p>
 
     <form id="scan-form" class="hero-audit-form" action="/scan-sync" method="post" enctype="multipart/form-data">
       {% if error %}
-        <div class="alert">{{ error }}</div>
+      <div class="alert">{{ error }}</div>
       {% endif %}
       <input id="depth-input" type="hidden" name="depth" value="scan">
 
       <div class="hero-url-row">
         <div class="prefix">https://</div>
-        <input id="url-input" name="url" type="text" placeholder="yourcompany.com" value="{{ url or '' }}" spellcheck="false" autocomplete="url" required aria-describedby="url-hint">
+        <input id="url-input" name="url" type="text" placeholder="yourcompany.com" value="{{ url or '' }}"
+          spellcheck="false" autocomplete="url" required aria-describedby="url-hint">
         <button id="submit-btn" type="submit" disabled>Run a audit <span>-&gt;</span></button>
       </div>
       <div class="form-status-line">
@@ -71,14 +72,22 @@
 
   <div class="ticker">
     <div class="track" id="ticker-track">
-      <span class="item"><span class="dot"></span><span class="score">87/100</span><span class="url">splitpea.co</span><span class="verdict">Mostly on-brand</span></span>
-      <span class="item flag"><span class="dot"></span><span class="score">64/100</span><span class="url">warpdrive.ai</span><span class="verdict">Drift in pricing copy</span></span>
-      <span class="item"><span class="dot"></span><span class="score">92/100</span><span class="url">marigold.studio</span><span class="verdict">On voice</span></span>
-      <span class="item flag"><span class="dot"></span><span class="score">71/100</span><span class="url">northbeam.io</span><span class="verdict">Tone slips in footer</span></span>
-      <span class="item"><span class="dot"></span><span class="score">95/100</span><span class="url">tinydocs.com</span><span class="verdict">Pristine</span></span>
-      <span class="item flag"><span class="dot"></span><span class="score">58/100</span><span class="url">forge.dev</span><span class="verdict">Generic across landing</span></span>
-      <span class="item"><span class="dot"></span><span class="score">81/100</span><span class="url">claraapp.com</span><span class="verdict">Strong on landing</span></span>
-      <span class="item flag"><span class="dot"></span><span class="score">76/100</span><span class="url">harbor.studio</span><span class="verdict">Tighten 14 lines</span></span>
+      <span class="item"><span class="dot"></span><span class="score">87/100</span><span
+          class="url">splitpea.co</span><span class="verdict">Mostly on-brand</span></span>
+      <span class="item flag"><span class="dot"></span><span class="score">64/100</span><span
+          class="url">warpdrive.ai</span><span class="verdict">Drift in pricing copy</span></span>
+      <span class="item"><span class="dot"></span><span class="score">92/100</span><span
+          class="url">marigold.studio</span><span class="verdict">On voice</span></span>
+      <span class="item flag"><span class="dot"></span><span class="score">71/100</span><span
+          class="url">northbeam.io</span><span class="verdict">Tone slips in footer</span></span>
+      <span class="item"><span class="dot"></span><span class="score">95/100</span><span
+          class="url">tinydocs.com</span><span class="verdict">Pristine</span></span>
+      <span class="item flag"><span class="dot"></span><span class="score">58/100</span><span
+          class="url">forge.dev</span><span class="verdict">Generic across landing</span></span>
+      <span class="item"><span class="dot"></span><span class="score">81/100</span><span
+          class="url">claraapp.com</span><span class="verdict">Strong on landing</span></span>
+      <span class="item flag"><span class="dot"></span><span class="score">76/100</span><span
+          class="url">harbor.studio</span><span class="verdict">Tighten 14 lines</span></span>
     </div>
   </div>
 
@@ -86,7 +95,8 @@
     <div class="head">
       <h2>The audit, on <span class="pink">every page.</span></h2>
       <div class="right">
-        A live workspace where every page is scored, every flagged line is explained, and every fix you make gets re-graded on the next scan.
+        A live workspace where every page is scored, every flagged line is explained, and every fix you make gets
+        re-graded on the next scan.
         <div class="down">v A real audit</div>
       </div>
     </div>
@@ -95,8 +105,9 @@
       <div class="col col-l">
         <div class="miniheader">
           <svg viewBox="0 0 64 64" width="22" height="22" aria-hidden="true">
-            <rect x="27" y="12" width="10" height="34" rx="1.5" fill="#0a0a0a"/>
-            <path d="M 6 56 Q 12 48, 18 56 T 32 56 T 46 56 T 58 56" stroke="#FF2D6F" stroke-width="4" fill="none" stroke-linecap="round"/>
+            <rect x="27" y="12" width="10" height="34" rx="1.5" fill="#0a0a0a" />
+            <path d="M 6 56 Q 12 48, 18 56 T 32 56 T 46 56 T 58 56" stroke="#FF2D6F" stroke-width="4" fill="none"
+              stroke-linecap="round" />
           </svg>
           Revisi
         </div>
@@ -109,7 +120,8 @@
           <span class="t">OK</span>
         </div>
         <div class="pagelist">
-          <div class="pg active"><span><span class="dot flag"></span>A/B Testing Tool...</span><span class="num">87</span></div>
+          <div class="pg active"><span><span class="dot flag"></span>A/B Testing Tool...</span><span
+              class="num">87</span></div>
           <div class="pg"><span><span class="dot"></span>Pricing</span><span class="num">92</span></div>
           <div class="pg"><span><span class="dot"></span>About</span><span class="num">95</span></div>
           <div class="pg"><span><span class="dot flag"></span>Docs - Quickstart</span><span class="num">71</span></div>
@@ -122,25 +134,69 @@
           <span class="url">splitpea.co</span>
           <span>Last scan 17 May 2026</span>
         </div>
-        <div class="lead">Mostly strong, with clear revision targets - <span class="ink">6 of 93 sentences flagged</span></div>
+        <div class="lead">Mostly strong, with clear revision targets - <span class="ink">6 of 93 sentences
+            flagged</span></div>
         <h3 class="pagetitle">A/B Testing Tool for<br>Small Websites | SplitPea</h3>
         <div class="subtype">SaaS feature page - 93 sentences - 1,204 words</div>
-        <div class="audit-line"><div class="idx flag">01</div><div class="body">Test a change. <span class="strong">See what happens.</span></div></div>
-        <div class="audit-line"><div class="idx">02</div><div class="body">SplitPea helps small teams run A/B tests without a heavy analytics setup.</div></div>
-        <div class="audit-line"><div class="idx">03</div><div class="body">Add one snippet, try a change, and keep a clear record of what you learned.</div></div>
-        <div class="audit-line"><div class="idx">04</div><div class="body">Start free, no card -&gt;</div></div>
-        <div class="audit-line"><div class="idx flag">05</div><div class="body">Most A/B testing tools <span class="strong">assume you have a growth team.</span> SplitPea keeps the workflow smaller.</div></div>
-        <div class="audit-line"><div class="idx">06</div><div class="body">Four steps. One simple workflow.</div></div>
+        <div class="audit-line">
+          <div class="idx flag">01</div>
+          <div class="body">Test a change. <span class="strong">See what happens.</span></div>
+        </div>
+        <div class="audit-line">
+          <div class="idx">02</div>
+          <div class="body">SplitPea helps small teams run A/B tests without a heavy analytics setup.</div>
+        </div>
+        <div class="audit-line">
+          <div class="idx">03</div>
+          <div class="body">Add one snippet, try a change, and keep a clear record of what you learned.</div>
+        </div>
+        <div class="audit-line">
+          <div class="idx">04</div>
+          <div class="body">Start free, no card -&gt;</div>
+        </div>
+        <div class="audit-line">
+          <div class="idx flag">05</div>
+          <div class="body">Most A/B testing tools <span class="strong">assume you have a growth team.</span> SplitPea
+            keeps the workflow smaller.</div>
+        </div>
+        <div class="audit-line">
+          <div class="idx">06</div>
+          <div class="body">Four steps. One simple workflow.</div>
+        </div>
       </div>
 
       <div class="col col-r">
         <div class="mock-panel-title">Voice scorecard</div>
         <div class="mock-panel-sub">Page-wide metrics</div>
         <div class="scorecard">
-          <div class="row"><div class="top"><span>Brand Fit</span><span class="tag ok">On-brand</span></div><div class="bar"><div class="fill" style="width: 88%;"></div></div><div class="desc">How closely the page matches the intended voice and avoids tone drift.</div></div>
-          <div class="row"><div class="top"><span>Audience Fit</span><span class="tag ok">On-brand</span></div><div class="bar"><div class="fill" style="width: 84%;"></div></div><div class="desc">Whether the copy speaks to the right reader, situation, and buying stage.</div></div>
-          <div class="row"><div class="top"><span>Clarity</span><span class="tag ok">On-brand</span></div><div class="bar"><div class="fill" style="width: 91%;"></div></div><div class="desc">How quickly a reader can understand the offer, the value, and the next step.</div></div>
-          <div class="row"><div class="top"><span>Human Sound</span><span class="tag flag">Drifting</span></div><div class="bar"><div class="fill flag" style="width: 62%;"></div></div><div class="desc">Whether copy feels natural, specific, and free of generated polish.</div></div>
+          <div class="row">
+            <div class="top"><span>Brand Fit</span><span class="tag ok">On-brand</span></div>
+            <div class="bar">
+              <div class="fill" style="width: 88%;"></div>
+            </div>
+            <div class="desc">How closely the page matches the intended voice and avoids tone drift.</div>
+          </div>
+          <div class="row">
+            <div class="top"><span>Audience Fit</span><span class="tag ok">On-brand</span></div>
+            <div class="bar">
+              <div class="fill" style="width: 84%;"></div>
+            </div>
+            <div class="desc">Whether the copy speaks to the right reader, situation, and buying stage.</div>
+          </div>
+          <div class="row">
+            <div class="top"><span>Clarity</span><span class="tag ok">On-brand</span></div>
+            <div class="bar">
+              <div class="fill" style="width: 91%;"></div>
+            </div>
+            <div class="desc">How quickly a reader can understand the offer, the value, and the next step.</div>
+          </div>
+          <div class="row">
+            <div class="top"><span>Human Sound</span><span class="tag flag">Drifting</span></div>
+            <div class="bar">
+              <div class="fill flag" style="width: 62%;"></div>
+            </div>
+            <div class="desc">Whether copy feels natural, specific, and free of generated polish.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -149,25 +205,44 @@
   <section class="metrics" id="metrics">
     <div class="head">
       <h2>Four things <span class="pink">we listen for.</span></h2>
-      <div class="right">Every Revisi audit grades a page on four voice metrics. You see the score, the bar, and the lines that made it move.</div>
+      <div class="right">Every Revisi audit grades a page on four voice metrics. You see the score, the bar, and the
+        lines that made it move.</div>
     </div>
     <div class="metric-grid">
       <div class="metric-card">
         <div class="num">M 01</div>
         <h3>Brand Fit</h3>
-        <p>Does this page sound like the brand you defined? 
-          Revisi compares every sentence to your voice profile 
+        <p>Does this page sound like the brand you defined?
+          Revisi compares every sentence to your voice profile
           and flags generic drift.</p>
-          <div class="example"><span class="lbl">Flagged</span>We <span class="u">empower</span> small teams to <span class="u">leverage</span> testing.</div></div>
-      <div class="metric-card"><div class="num">M 02</div><h3>Audience Fit</h3><p>Are you speaking to the right person at the right stage? Revisi surfaces lines pitched at the wrong reader.</p><div class="example"><span class="lbl">Mismatch</span>Built for cross-functional <span class="u">enterprise teams</span>.</div></div>
+        <div class="example"><span class="lbl">Flagged</span>We <span class="u">empower</span> small teams to <span
+            class="u">leverage</span> testing.</div>
+      </div>
+      <div class="metric-card">
+        <div class="num">M 02</div>
+        <h3>Audience Fit</h3>
+        <p>Are you speaking to the right person at the right stage? Revisi surfaces lines pitched at the wrong reader.
+        </p>
+        <div class="example"><span class="lbl">Mismatch</span>Built for cross-functional <span class="u">enterprise
+            teams</span>.</div>
+      </div>
       <div class="metric-card">
         <div class="num">M 03</div>
         <h3>Clarity</h3>
-        <p>Can a first-time reader explain what you do after thirty seconds? 
-          Revisi flags thick jargon, fuzzy value propositions, 
+        <p>Can a first-time reader explain what you do after thirty seconds?
+          Revisi flags thick jargon, fuzzy value propositions,
           and unclear next steps.</p>
-          <div class="example"><span class="lbl">Readability down</span>Holistic <span class="u">end-to-end orchestration</span> across the stack.</div></div>
-      <div class="metric-card"><div class="num">M 04</div><h3>Human Sound</h3><p>Does it sound like a person wrote it? Revisi catches empty adjectives, hedging tics, and generated polish.</p><div class="example"><span class="lbl">LLM cadence</span>In today's <span class="u">fast-moving landscape</span>, your team needs...</div></div>
+        <div class="example"><span class="lbl">Readability down</span>Holistic <span class="u">end-to-end
+            orchestration</span> across the stack.</div>
+      </div>
+      <div class="metric-card">
+        <div class="num">M 04</div>
+        <h3>Human Sound</h3>
+        <p>Does it sound like a person wrote it? Revisi catches empty adjectives, hedging tics, and generated polish.
+        </p>
+        <div class="example"><span class="lbl">LLM cadence</span>In today's <span class="u">fast-moving
+            landscape</span>, your team needs...</div>
+      </div>
     </div>
   </section>
 
@@ -178,11 +253,13 @@
       <div class="step">
         <div class="num">/ 01</div>
         <h4>Define your voice.</h4>
-        <p>Paste copy you love, upload a style guide, or let Revisi sample your site and draft a starting voice profile.</p>
+        <p>Paste copy you love, upload a style guide, or let Revisi sample your site and draft a starting voice profile.
+        </p>
         <div class="vis">
           <div class="row"><span class="k">Tone</span><span class="v">Plainspoken</span></div>
           <div class="row"><span class="k">Vocab</span><span class="v">Short verbs</span></div>
-          <div class="row"><span class="k">Avoids</span><span class="v"><span class="hi">empower</span> <span class="hi">unlock</span></span></div>
+          <div class="row"><span class="k">Avoids</span><span class="v"><span class="hi">empower</span> <span
+                class="hi">unlock</span></span></div>
         </div>
       </div>
       <div class="step">
@@ -192,7 +269,8 @@
         <div class="vis">
           <div class="row"><span class="k">Site</span><span class="v">splitpea.co</span></div>
           <div class="row"><span class="k">Pages</span><span class="v">1 scanned</span></div>
-          <div class="row"><span class="k">Flags</span><span class="v"><span class="hi">6 need attention</span></span></div>
+          <div class="row"><span class="k">Flags</span><span class="v"><span class="hi">6 need attention</span></span>
+          </div>
         </div>
       </div>
       <div class="step">
@@ -202,7 +280,8 @@
         <div class="vis">
           <div class="row"><span class="k">Today</span><span class="v">87 / 100</span></div>
           <div class="row"><span class="k">Previous</span><span class="v">74 / 100</span></div>
-          <div class="row"><span class="k">Change</span><span class="v"><span class="hi">+13</span> - 9 lines fixed</span></div>
+          <div class="row"><span class="k">Change</span><span class="v"><span class="hi">+13</span> - 9 lines
+              fixed</span></div>
         </div>
       </div>
     </div>
@@ -211,27 +290,36 @@
   <section class="sample">
     <div class="eyebrow">A real audit</div>
     <h2>This is what Revisi actually <span class="pink">tells you.</span></h2>
-    <p class="lede">An excerpt from a SaaS landing page, marked up the way your copy editor used to. Pink squiggle means look at this. Highlight means consider this instead.</p>
+    <p class="lede">An excerpt from a SaaS landing page, marked up the way your copy editor used to. Pink squiggle means
+      look at this. Highlight means consider this instead.</p>
     <div class="twocol">
       <div class="pane before">
         <div class="lbl">
           <span>Before - page score</span>
-          <span class="score flag">64 / 100</span>
+          <span class="score flag"><span class="n">64</span><span class="of">/ 100</span></span>
         </div>
-          <div class="body">
-            <p>
-              <span class="u">In today's fast-moving landscape</span>, your team needs a platform that can <span class="u">empower</span> every stakeholder to <span class="u">leverage</span> data at scale.</p><p>Our <span class="u">best-in-class</span>, <span class="u">end-to-end</span> solution unlocks <span class="u">holistic</span> insights across the funnel.</p>
-            </div>
-          </div>
+        <div class="body">
+          <p>
+            <span class="u">In today's fast-moving landscape</span>, your team needs a platform that can <span
+              class="u">empower</span> every stakeholder to <span class="u">leverage</span> data at scale.
+          </p>
+          <p>Our <span class="u">best-in-class</span>, <span class="u">end-to-end</span> solution unlocks <span
+              class="u">holistic</span> insights across the funnel.</p>
+        </div>
+      </div>
       <div class="pane">
         <div class="lbl">
           <span>After - page score</span>
-          <span class="score">91 / 100</span></div>
-          <div class="body">
-            <p>
-              <span class="add">Most teams</span> want a platform where <span class="add">anyone on the team</span> can <span class="add">work with the data</span>.</p><p>Ours is <span class="add">small, fast, and clear</span>: pick a question, pull the rows, ship a chart.</p>
-            </div>
-          </div>
+          <span class="score"><span class="n">91</span><span class="of">/ 100</span></span>
+        </div>
+        <div class="body">
+          <p>
+            <span class="add">Most teams</span> want a platform where <span class="add">anyone on the team</span> can
+            <span class="add">work with the data</span>.
+          </p>
+          <p>Ours is <span class="add">small, fast, and clear</span>: pick a question, pull the rows, ship a chart.</p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -241,11 +329,14 @@
       <em>Then it told us what we sounded like instead.</em>"
     </blockquote>
     <div class="by">
-      <div class="who"><div class="name">Maya Chen</div><div>Head of Content - Northbeam</div></div>
+      <div class="who">
+        <div class="name">Maya Chen</div>
+        <div>Head of Content - Northbeam</div>
+      </div>
       <div>Audit pass - score 64 to 89 in two weeks</div>
     </div>
   </section>
-<!--
+  <!--
   <section class="trust">
     <div class="head">Already auditing copy at</div>
     <div class="row">
@@ -262,12 +353,50 @@
   <section class="pricing" id="pricing">
     <div class="head">
       <h2>Pick a <span class="pink">tier.</span></h2>
-      <div class="right">Every plan is one flat price, no per-seat charges, no overage surprises. Cancel any time and your reports stay.</div>
+      <div class="right">Flat monthly price, fixed credits. 
+        One credit scans a page up to 5,000 words - enough for almost any homepage, landing page, or blog post. 
+        Longer pieces use one credit per 5,000 words.</div>
     </div>
     <div class="price-grid">
-      <div class="price-card"><div class="tier"><span>Solo</span></div><div class="name">Solo</div><div class="price"><span class="n">$19</span><span class="per">/ month</span></div><p class="blurb">For founders auditing their own one-page sites before launch and major content updates</p><ul><li>1 site, 50 pages / month</li><li>2 voice profiles</li><li>Weekly re-scans</li><li>CSV export</li></ul><a class="card-cta" href="#scan-form">Start free <span>-&gt;</span></a></div>
-      <div class="price-card feature"><div class="tier"><span>Studio</span><span class="badge">Most teams pick this</span></div><div class="name">Studio</div><div class="price"><span class="n">$89</span><span class="per">/ month</span></div><p class="blurb">For marketing teams maintaining a real site with real traffic.</p><ul><li>5 sites, 500 pages / month</li><li>Unlimited voice profiles</li><li>Nightly re-scans</li><li>Version history + voice trend</li></ul><a class="card-cta" href="#scan-form">Start 14-day trial <span>-&gt;</span></a></div>
-      <div class="price-card"><div class="tier"><span>Agency</span></div><div class="name">Agency</div><div class="price"><span class="n">Custom</span></div><p class="blurb">For studios auditing every client site every week.</p><ul><li>Unlimited sites and pages</li><li>White-label PDF reports</li><li>Client portals</li><li>API + webhooks</li></ul><a class="card-cta" href="#scan-form">Talk to us <span>-&gt;</span></a></div>
+      <div class="price-card">
+        <div class="tier"><span>Solo</span></div>
+        <div class="name">Solo</div>
+        <div class="price"><span class="n">$9</span><span class="per">/ month</span></div>
+        <p class="blurb">For founders auditing their own one-page sites before launch and major content updates</p>
+        <ul>
+          <li>10 credits per month</li>
+          <li>Roughly 10 pages</li>
+          <li>Weekly or manual re-scans</li>
+          <li>Version history + trends</li>
+        </ul><a class="card-cta" href="/login">Start on Solo <span>-&gt;</span></a>
+      </div>
+      <div class="price-card feature">
+        <div class="tier">
+          <span>Pro</span>
+          <span class="badge">Most teams pick this</span>
+        </div>
+        <div class="name">Pro</div>
+        <div class="price"><span class="n">$29</span><span class="per">/ month</span></div>
+        <p class="blurb">For marketing teams maintaining a real site with real traffic.</p>
+        <ul>
+          <li>50 credits per month</li>
+          <li>Roughly 50 pages</li>
+          <li>Weekly or manual re-scans</li>
+          <li>Version history + trends</li>
+        </ul><a class="card-cta" href="/login">Start on Pro <span>-&gt;</span></a>
+      </div>
+      <div class="price-card">
+        <div class="tier"><span>Agency</span></div>
+        <div class="name">Agency</div>
+        <div class="price"><span class="n">$79</span><span class="per">/ month</span></div>
+        <p class="blurb">For studios auditing every client site every week.</p>
+        <ul>
+          <li>150 credits per month</li>
+          <li>Roughly 150 pages</li>
+          <li>Weekly or manual re-scans</li>
+          <li>Version history + trends</li>
+        </ul><a class="card-cta" href="/login">Start on Agency <span>-&gt;</span></a>
+      </div>
     </div>
   </section>
 
@@ -286,19 +415,41 @@
 
   <div class="footer-squig">
     <svg viewBox="0 0 1200 80" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M 0 60 Q 30 30, 60 60 T 120 60 T 180 60 T 240 60 T 300 60 T 360 60 T 420 60 T 480 60 T 540 60 T 600 60 T 660 60 T 720 60 T 780 60 T 840 60 T 900 60 T 960 60 T 1020 60 T 1080 60 T 1140 60 T 1200 60" stroke="#FF2D6F" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path
+        d="M 0 60 Q 30 30, 60 60 T 120 60 T 180 60 T 240 60 T 300 60 T 360 60 T 420 60 T 480 60 T 540 60 T 600 60 T 660 60 T 720 60 T 780 60 T 840 60 T 900 60 T 960 60 T 1020 60 T 1080 60 T 1140 60 T 1200 60"
+        stroke="#FF2D6F" stroke-width="3" fill="none" stroke-linecap="round" />
     </svg>
   </div>
 
   <footer class="marketing-footer">
     <div class="top">
       <div class="brand-block">
-        <img class="footer-wordmark" src="{{ url_for('static', path='/revisi-wordmark-light.svg') }}" alt="Revisi" width="140" height="54">
+        <img class="footer-wordmark" src="{{ url_for('static', path='/revisi-wordmark-light.svg') }}" alt="Revisi"
+          width="140" height="54">
         <p>The brand voice auditor for teams who care how their site sounds. Built by SplitPea.</p>
       </div>
-      <div class="col"><h5>Product</h5><ul><li><a href="#scan-form">Audit</a></li><li><a href="#metrics">Voice metrics</a></li><li><a href="#pricing">Pricing</a></li></ul></div>
-      <div class="col"><h5>Resources</h5><ul><li><a href="#product">Sample audits</a></li><li><a href="#how">How it works</a></li></ul></div>
-      <div class="col"><h5>Company</h5><ul><li><a href="https://splitpea.co" rel="noreferrer">SplitPea</a></li><li><a href="#">Privacy</a></li></ul></div>
+      <div class="col">
+        <h5>Product</h5>
+        <ul>
+          <li><a href="#scan-form">Audit</a></li>
+          <li><a href="#metrics">Voice metrics</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h5>Resources</h5>
+        <ul>
+          <li><a href="#product">Sample audits</a></li>
+          <li><a href="#how">How it works</a></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h5>Company</h5>
+        <ul>
+          <li><a href="https://splitpea.co" rel="noreferrer">SplitPea</a></li>
+          <li><a href="#">Privacy</a></li>
+        </ul>
+      </div>
     </div>
     <div class="bot">
       <span>2026 Revisi - All rights reserved</span>
@@ -313,9 +464,12 @@
     <div class="pre">Reading</div>
     <h2>Hang on. Reading the site.</h2>
     <div class="log" id="log">
-      <div class="row"><span class="num">wait</span><span>Waiting for the scan job</span><span class="t">--:--</span></div>
+      <div class="row"><span class="num">wait</span><span>Waiting for the scan job</span><span class="t">--:--</span>
+      </div>
     </div>
-    <div class="progress"><div class="bar" id="progress-bar"></div></div>
+    <div class="progress">
+      <div class="bar" id="progress-bar"></div>
+    </div>
     <div class="loader-error" id="loader-error" hidden>
       <p id="loader-error-text"></p>
       <div class="loader-actions">
