@@ -92,7 +92,14 @@
         <label><span>Name</span><input name="name" value="{{ site_values.name if site_values else '' }}" placeholder="Client or site name"></label>
         <label><span>URL</span><input name="url" value="{{ site_values.url if site_values else '' }}" placeholder="example.com" required></label>
         <label class="workspace-guide"><span>Brand voice guide</span><textarea name="brand_voice" rows="6" placeholder="Paste the voice guide or the notes the audit should obey.">{{ site_values.brand_voice if site_values else '' }}</textarea></label>
-        <label><span>Upload Markdown guide</span><input name="brand_voice_file" type="file" accept=".md,text/markdown"></label>
+        <div class="file-upload-field">
+          <span>Upload Markdown guide</span>
+          <div class="file-upload-control">
+            <label class="file-upload-button" for="add-site-brand-voice-file">Browse</label>
+            <input id="add-site-brand-voice-file" class="file-upload-input" name="brand_voice_file" type="file" accept=".md,text/markdown">
+            <span class="file-upload-name" data-file-upload-name>No file selected.</span>
+          </div>
+        </div>
         <p class="field-note">Optional. `.md` files only. Uploaded Markdown replaces pasted guide text for this site.</p>
         <button class="app-button primary" type="submit">Create site</button>
       </form>

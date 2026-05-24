@@ -37,10 +37,12 @@
     <h1>
       Read your<br>
       website like a<br>
-      <span class="sq">copy chief.</span>
+      <span class="sq">copy editor.</span>
     </h1>
     <p class="sub">
-      Revisi reads every page on your site and grades it against your brand voice, sentence by sentence, with a score and a flag on each line drifting off-tone. Before your readers feel it. Before your CEO sees it.
+      Revisi reads every page on your site and grades it against your 
+      brand voice, sentence by sentence, with a score and a flag on each line 
+      if it drifts off-tone. 
     </p>
 
     <form id="scan-form" class="hero-audit-form" action="/scan-sync" method="post" enctype="multipart/form-data">
@@ -52,7 +54,7 @@
       <div class="hero-url-row">
         <div class="prefix">https://</div>
         <input id="url-input" name="url" type="text" placeholder="yourcompany.com" value="{{ url or '' }}" spellcheck="false" autocomplete="url" required aria-describedby="url-hint">
-        <button id="submit-btn" type="submit" disabled>Run the audit <span>-&gt;</span></button>
+        <button id="submit-btn" type="submit" disabled>Run a audit <span>-&gt;</span></button>
       </div>
       <div class="form-status-line">
         <span id="url-hint">Required</span>
@@ -60,25 +62,7 @@
       </div>
 
       <details class="guide-drawer locked-guide">
-        <summary>Brand voice guide is in the paid app</summary>
-        <div class="guide-grid">
-          <div class="drop" id="drop">
-            <div class="icon" id="drop-icon">MD</div>
-            <div class="body">
-              <div class="t1" id="drop-t1">Free audits use generic copy guidance.</div>
-              <div class="t2" id="drop-t2">Sign in to save a voice guide, rescan, and audit more pages.</div>
-            </div>
-            <div class="meta" id="drop-meta">
-              <span>md / mdx / txt</span>
-            </div>
-            <input id="file-input" name="brand_voice_file" type="file" accept=".md,.mdx,.txt,.markdown,.json,text/markdown,text/plain,application/json" hidden disabled>
-          </div>
-          <div class="voice-inline">
-            <label for="brand_voice">Saved voice guide</label>
-            <textarea id="brand_voice" name="brand_voice" rows="5" placeholder="Available after login." disabled></textarea>
-          </div>
-        </div>
-        <a class="guide-upgrade" href="/signup">Open the app</a>
+        <summary>You can upload a brand voice guide in the paid app</summary>
       </details>
 
     </form>
@@ -168,7 +152,13 @@
       <div class="right">Every Revisi audit grades a page on four voice metrics. You see the score, the bar, and the lines that made it move.</div>
     </div>
     <div class="metric-grid">
-      <div class="metric-card"><div class="num">M 01</div><h3>Brand Fit</h3><p>Does this page sound like the brand you defined? Revisi compares every sentence to your voice profile and flags generic drift.</p><div class="example"><span class="lbl">Flagged</span>We <span class="u">empower</span> small teams to <span class="u">leverage</span> testing.</div></div>
+      <div class="metric-card">
+        <div class="num">M 01</div>
+        <h3>Brand Fit</h3>
+        <p>Does this page sound like the brand you defined? 
+          Revisi compares every sentence to your voice profile 
+          and flags generic drift.</p>
+          <div class="example"><span class="lbl">Flagged</span>We <span class="u">empower</span> small teams to <span class="u">leverage</span> testing.</div></div>
       <div class="metric-card"><div class="num">M 02</div><h3>Audience Fit</h3><p>Are you speaking to the right person at the right stage? Revisi surfaces lines pitched at the wrong reader.</p><div class="example"><span class="lbl">Mismatch</span>Built for cross-functional <span class="u">enterprise teams</span>.</div></div>
       <div class="metric-card"><div class="num">M 03</div><h3>Clarity</h3><p>Can a first-time reader explain what you do after thirty seconds? Revisi grades legibility, jargon density, and value clarity.</p><div class="example"><span class="lbl">Readability down</span>Holistic <span class="u">end-to-end orchestration</span> across the stack.</div></div>
       <div class="metric-card"><div class="num">M 04</div><h3>Human Sound</h3><p>Does it sound like a person wrote it? Revisi catches empty adjectives, hedging tics, and generated polish.</p><div class="example"><span class="lbl">LLM cadence</span>In today's <span class="u">fast-moving landscape</span>, your team needs...</div></div>
@@ -182,7 +172,7 @@
       <div class="step">
         <div class="num">/ 01</div>
         <h4>Define your voice.</h4>
-        <p>Paste copy you love, upload a guide, or let Revisi infer a provisional voice profile from your page.</p>
+        <p>Paste copy you love, upload a style guide, or let Revisi sample your site and draft a starting voice profile.</p>
         <div class="vis">
           <div class="row"><span class="k">Tone</span><span class="v">Plainspoken</span></div>
           <div class="row"><span class="k">Vocab</span><span class="v">Short verbs</span></div>

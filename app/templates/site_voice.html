@@ -57,10 +57,14 @@
               <span>Reference copy</span>
               <textarea name="brand_voice" rows="12" placeholder="Paste voice rules, examples, anti-references, and banned phrases.">{{ guide_values.brand_voice if guide_values.brand_voice is defined else (site.brand_voice_text or '') }}</textarea>
             </label>
-            <label>
+            <div class="file-upload-field">
               <span>Upload Markdown guide</span>
-              <input name="brand_voice_file" type="file" accept=".md,text/markdown">
-            </label>
+              <div class="file-upload-control">
+                <label class="file-upload-button" for="site-guide-brand-voice-file">Browse</label>
+                <input id="site-guide-brand-voice-file" class="file-upload-input" name="brand_voice_file" type="file" accept=".md,text/markdown">
+                <span class="file-upload-name" data-file-upload-name>No file selected.</span>
+              </div>
+            </div>
             <p class="field-note">Optional. `.md` files only. Uploaded Markdown replaces pasted guide text for this site.</p>
             <button class="app-button primary" type="submit">Save voice guide</button>
           </form>

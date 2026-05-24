@@ -251,6 +251,13 @@
     }
   }
 
+  document.querySelectorAll(".file-upload-input").forEach((input) => {
+    const name = input.closest(".file-upload-control")?.querySelector("[data-file-upload-name]");
+    input.addEventListener("change", () => {
+      if (name) name.textContent = input.files?.[0]?.name || "No file selected.";
+    });
+  });
+
   const appScanLoader = document.getElementById("app-scan-loader");
   if (appScanLoader) {
     const rows = Array.from(appScanLoader.querySelectorAll("[data-app-scan-log] .row"));
